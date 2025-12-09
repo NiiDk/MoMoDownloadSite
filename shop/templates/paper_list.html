@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Question Paper</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .paper-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .paper-details h2 { margin: 0 0 5px 0; color: #007bff; }
+        .paper-details p { margin: 0; color: #555; }
+        .buy-button { background-color: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; transition: background-color 0.3s; }
+        .buy-button:hover { background-color: #1e7e34; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Available Question Papers</h1>
+
+        {% for paper in papers %}
+            <div class="paper-item">
+                <div class="paper-details">
+                    <h2>{{ paper.title }}</h2>
+                    <p>Price: GHS {{ paper.price }}</p>
+                </div>
+                <a href="{% url 'initiate-payment' paper_id=paper.id %}" class="buy-button">
+                    Buy Now
+                </a>
+            </div>
+        {% empty %}
+            <p>No question papers are available at the moment.</p>
+        {% endfor %}
+
+    </div>
+</body>
+</html>
