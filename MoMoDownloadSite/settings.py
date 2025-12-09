@@ -5,7 +5,7 @@ Django settings for MoMoDownloadSite project.
 """
 
 from pathlib import Path
-from decouple import config # <-- CRITICAL: For loading secrets securely
+from decouple import config 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,16 +18,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY') 
 
 # SECURITY WARNING: Do NOT deploy with DEBUG = True!
-DEBUG = config('DEBUG', default=False, cast=bool) # Reads from .env, defaults to False
+DEBUG = config('DEBUG', default=False, cast=bool)
 
+# 🔥 CORRECTION APPLIED HERE: Added the specific domain
 ALLOWED_HOSTS = [
     '127.0.0.1', 
     'localhost', 
-    # Ngrok address for local testing of webhooks
     config('NGROK_TUNNEL', default=''), 
-    # Render subdomain wildcard for deployment
     '.render.com', 
-    # Add your custom domain here if you buy one: 'yourdomainname.com'
+    'momodownloadsite.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
+    config('RENDER_EXTERNAL_HOSTNAME', default=''),
 ]
 
 # ====================================================================
