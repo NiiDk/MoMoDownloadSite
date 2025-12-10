@@ -3,28 +3,40 @@
 {% block page_title %}{{ class_level.name }} {{ term.name }} - Select Subject{% endblock page_title %}
 
 {% block content %}
-    <h2 class="mb-4 text-center text-secondary">Subjects for {{ class_level.name }} - {{ term.name }}</h2>
-    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+    <h2 class="mb-4 text-center text-secondary">
+        <i class="bi bi-journal-bookmark"></i> Subjects for {{ class_level.name }} - {{ term.name }}
+    </h2>
+    
+    <div class="text-center mb-4">
+        <a href="{% url 'shop:term_list' class_level.slug %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Terms
+        </a>
+    </div>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for subject_obj in subjects %}
             <div class="col">
-                <div class="card card-class text-center h-100 shadow-sm border-0 bg-light">
+                <div class="card card-class text-center h-100 shadow-sm border">
                     <div class="card-body p-4">
                         <h5 class="card-title text-dark fw-bold">{{ subject_obj.name }}</h5>
                         
-                        {% with papers_count=subject_obj.papers.filter(class_level=class_level, term=term).count %}
-                        <p class="card-text small text-muted">
-                            {{ papers_count }} Paper{{ papers_count|pluralize }} available
-                        </p>
+                        {% with papers_count=subject_obj.filtered_papers|length %}
+                        <div class="mb-3">
+                            <span class="badge {% if papers_count > 0 %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+                                {{ papers_count }} Paper{{ papers_count|pluralize }}
+                            </span>
+                        </div>
                         
-                        {% if papers_count %}
-                            {% with paper=subject_obj.papers.filter(class_level=class_level, term=term).first %}
-                                <a href="{% url 'shop:paper_detail' class_level.slug term.slug subject_obj.slug paper.slug %}" class="btn btn-sm btn-info mt-3 shadow-sm">
-                                    View Paper &rarr;
+                        {% if papers_count > 0 %}
+                            {% with paper=subject_obj.filtered_papers.0 %}
+                                <a href="{% url 'shop:paper_detail' class_level.slug term.slug subject_obj.slug paper.slug %}" 
+                                   class="btn btn-info btn-sm mt-2">
+                                    <i class="bi bi-eye"></i> View Available Paper{{ papers_count|pluralize }}
                                 </a>
                             {% endwith %}
                         {% else %}
-                            <button class="btn btn-sm btn-outline-secondary mt-3" disabled>
-                                No Papers
+                            <button class="btn btn-outline-secondary btn-sm mt-2" disabled>
+                                <i class="bi bi-slash-circle"></i> No Papers Yet
                             </button>
                         {% endif %}
                         {% endwith %}
@@ -35,7 +47,11 @@
         {% empty %}
             <div class="col-12">
                 <div class="alert alert-danger text-center" role="alert">
-                    No subjects defined. Please check the admin.
+                    <h4 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle"></i> No Subjects Defined
+                    </h4>
+                    <p>Please add subjects in the admin panel.</p>
+                    <a href="{% url 'admin:index' %}" class="btn btn-outline-danger">Go to Admin</a>
                 </div>
             </div>
         {% endfor %}

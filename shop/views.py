@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from .models import Classes, Term, Subject, QuestionPaper, Payment # CRITICAL: Import new models
 from django.urls import reverse # For reversing URLs with slugs
+from django.db import models
 
 # ====================================================================
 # 1. NEW HIERARCHICAL LIST VIEWS (Navigation)
@@ -50,12 +51,23 @@ def term_list(request, class_slug):
 def subject_list(request, class_slug, term_slug):
     """
     Displays the list of subjects available for the selected Class and Term.
+    Optimized with prefetch_related for better performance.
     """
     class_level = get_object_or_404(Classes, slug=class_slug)
     term = get_object_or_404(Term, class_name=class_level, slug=term_slug)
     
-    # We fetch all subjects to list them, and later filter papers by this selection.
-    subjects = Subject.objects.all() 
+    # Get all subjects with prefetched paper counts for this class/term
+    # This is MUCH more efficient than querying inside the template loop
+    subjects = Subject.objects.all().prefetch_related(
+        models.Prefetch(
+            'papers',
+            queryset=QuestionPaper.objects.filter(
+                class_level=class_level, 
+                term=term
+            ),
+            to_attr='filtered_papers'
+        )
+    )
 
     context = {
         'class_level': class_level,
@@ -63,7 +75,6 @@ def subject_list(request, class_slug, term_slug):
         'subjects': subjects,
         'page_title': f'{class_level.name} {term.name} - Select Subject',
     }
-    # We will use a dedicated template for the subjects list
     return render(request, 'shop/subject_list.html', context)
     
 # 1.4. Final Level: Paper Detail/Buy Page
