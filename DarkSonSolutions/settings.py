@@ -70,7 +70,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'MoMoDownloadSite.urls'
+ROOT_URLCONF = 'DarkSonSolutions.urls'
 
 TEMPLATES = [
     {
@@ -88,7 +88,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'MoMoDownloadSite.wsgi.application'
+WSGI_APPLICATION = 'DarkSonSolutions.wsgi.application'
 
 # ====================================================================
 # 💾 DATABASE
