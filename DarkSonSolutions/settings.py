@@ -26,7 +26,7 @@ ALLOWED_HOSTS = [
     'localhost', 
     config('NGROK_TUNNEL', default=''), 
     '.render.com', 
-    'momodownloadsite.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
+    'darksonsolutions.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
     config('RENDER_EXTERNAL_HOSTNAME', default=''),
 ]
 
