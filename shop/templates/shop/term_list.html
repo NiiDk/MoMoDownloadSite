@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Terms for {{ class_level.name }}{% endblock page_title %}
+
+{% block content %}
+    <h2 class="mb-4 text-center text-secondary">Available Terms in {{ class_level.name }}</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for term_obj in terms %}
+            <div class="col">
+                <a href="{% url 'shop:subject_list' class_level.slug term_obj.slug %}" class="text-decoration-none">
+                    <div class="card card-class text-center h-100 shadow border-success border-2">
+                        <div class="card-body p-4">
+                            <h5 class="card-title fw-bold text-success display-5">{{ term_obj.name }}</h5>
+                            <p class="card-text text-muted mt-3">Select to see all subjects for this term.</p>
+                            <span class="btn btn-outline-success mt-3">
+                                Browse Subjects &rarr;
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-warning text-center" role="alert">
+                    No terms have been added for this class yet!
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock content %}

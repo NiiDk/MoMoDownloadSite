@@ -1,8 +1,9 @@
-# MoMoDownloadSite/urls.py
+# DarkSonSolutions/urls.py
 
 from django.contrib import admin
 from django.urls import path, include # 'include' is necessary for this structure
-from shop import views 
+# CRITICAL FIX: Only import the specific function needed here
+from shop.views import paystack_webhook 
 
 urlpatterns = [
     # Admin path remains the same
@@ -12,5 +13,5 @@ urlpatterns = [
     path('', include('shop.urls')),
 
     # The webhook MUST remain here for the Paystack link to be at the root level (e.g., /webhooks/paystack/)
-    path('webhooks/paystack/', views.paystack_webhook, name='paystack-webhook'),
+    path('webhooks/paystack/', paystack_webhook, name='paystack-webhook'),
 ]

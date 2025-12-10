@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ class_level.name }} {{ term.name }} - Select Subject{% endblock page_title %}
+
+{% block content %}
+    <h2 class="mb-4 text-center text-secondary">Subjects for {{ class_level.name }} - {{ term.name }}</h2>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for subject_obj in subjects %}
+            <div class="col">
+                <div class="card card-class text-center h-100 shadow-sm border-0 bg-light">
+                    <div class="card-body p-4">
+                        <h5 class="card-title text-dark fw-bold">{{ subject_obj.name }}</h5>
+                        
+                        {% with papers_count=subject_obj.papers.filter(class_level=class_level, term=term).count %}
+                        <p class="card-text small text-muted">
+                            {{ papers_count }} Paper{{ papers_count|pluralize }} available
+                        </p>
+                        
+                        {% if papers_count %}
+                            {% with paper=subject_obj.papers.filter(class_level=class_level, term=term).first %}
+                                <a href="{% url 'shop:paper_detail' class_level.slug term.slug subject_obj.slug paper.slug %}" class="btn btn-sm btn-info mt-3 shadow-sm">
+                                    View Paper &rarr;
+                                </a>
+                            {% endwith %}
+                        {% else %}
+                            <button class="btn btn-sm btn-outline-secondary mt-3" disabled>
+                                No Papers
+                            </button>
+                        {% endif %}
+                        {% endwith %}
+                        
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-danger text-center" role="alert">
+                    No subjects defined. Please check the admin.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock content %}

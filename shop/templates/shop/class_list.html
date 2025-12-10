@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Select Your Class/Grade{% endblock page_title %}
+
+{% block content %}
+    <h2 class="mb-4 text-center text-secondary">Available Academic Levels</h2>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for class_obj in classes %}
+            <div class="col">
+                <a href="{% url 'shop:term_list' class_obj.slug %}" class="text-decoration-none">
+                    <div class="card card-class text-center h-100 shadow border-primary border-3">
+                        <div class="card-body p-4">
+                            <h5 class="card-title fw-bold text-primary display-6">{{ class_obj.name }}</h5>
+                            <p class="card-text text-muted mt-3">{{ class_obj.description|default:"Click to access Term 1, Term 2, and Term 3 papers for this grade." }}</p>
+                            <span class="btn btn-outline-primary mt-3">
+                                View Terms &rarr;
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-warning text-center" role="alert">
+                    <h4 class="alert-heading">No Classes Found!</h4>
+                    It looks like no Classes/Grades have been added yet. Please log into the Admin panel and add them to make your content visible.
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock content %}

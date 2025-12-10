@@ -1,4 +1,4 @@
-# MoMoDownloadSite/shop/views.py
+# shop/views.py
 
 import json
 import requests
@@ -7,37 +7,89 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
-from .models import QuestionPaper, Payment
-
-# MoMoDownloadSite/shop/views.py
-
-# ... existing imports ...
-
-# MoMoDownloadSite/shop/views.py
-
-# ... existing code ...
+from .models import Classes, Term, Subject, QuestionPaper, Payment # CRITICAL: Import new models
+from django.urls import reverse # For reversing URLs with slugs
 
 # ====================================================================
-# 0. ITEM LIST VIEW (The Homepage for all users)
+# 1. NEW HIERARCHICAL LIST VIEWS (Navigation)
 # ====================================================================
 
-def paper_list(request):
+# 1.1. Homepage: List all Classes/Grades
+def class_list(request):
     """
-    Displays a list of all available question papers for users to select.
+    Displays the top-level list of all available Classes (e.g., JHS 1).
+    This is the new homepage.
     """
-    # Fetches all QuestionPaper objects from the database
-    papers = QuestionPaper.objects.all()
+    classes = Classes.objects.all()
     context = {
-        'papers': papers
+        'classes': classes,
+        'page_title': 'Select Your Class/Grade',
+        'is_homepage': True
     }
-    # Renders the new item listing template
-    return render(request, 'paper_list.html', context)
+    # We will use a dedicated template for the classes list
+    return render(request, 'shop/class_list.html', context)
+    
+# 1.2. Second Level: List all Terms for a Class
+def term_list(request, class_slug):
+    """
+    Displays the list of terms (Term 1, 2, 3) available for the selected Class.
+    """
+    class_level = get_object_or_404(Classes, slug=class_slug)
+    # Fetch terms related to this class
+    terms = class_level.terms.all() 
+    
+    context = {
+        'class_level': class_level,
+        'terms': terms,
+        'page_title': f'Select Term for {class_level.name}',
+    }
+    # We will use a dedicated template for the terms list
+    return render(request, 'shop/term_list.html', context)
+
+# 1.3. Third Level: List all Subjects for a Term
+def subject_list(request, class_slug, term_slug):
+    """
+    Displays the list of subjects available for the selected Class and Term.
+    """
+    class_level = get_object_or_404(Classes, slug=class_slug)
+    term = get_object_or_404(Term, class_name=class_level, slug=term_slug)
+    
+    # We fetch all subjects to list them, and later filter papers by this selection.
+    subjects = Subject.objects.all() 
+
+    context = {
+        'class_level': class_level,
+        'term': term,
+        'subjects': subjects,
+        'page_title': f'{class_level.name} {term.name} - Select Subject',
+    }
+    # We will use a dedicated template for the subjects list
+    return render(request, 'shop/subject_list.html', context)
+    
+# 1.4. Final Level: Paper Detail/Buy Page
+def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
+    """
+    Displays the specific paper that the user can purchase.
+    This replaces the old 'paper_list' and sets up the single product page.
+    """
+    # Fetch the specific Question Paper based on all slugs
+    paper = get_object_or_404(QuestionPaper, 
+        class_level__slug=class_slug,
+        term__slug=term_slug,
+        subject__slug=subject_slug,
+        slug=paper_slug
+    )
+
+    context = {
+        'paper': paper,
+        'page_title': paper.title,
+        'currency_code': settings.CURRENCY_CODE
+    }
+    return render(request, 'shop/paper_detail.html', context)
+
 
 # ====================================================================
-# 1. FORM DEFINITION
-# ... rest of the file ...
-# ====================================================================
-# 1. FORM DEFINITION
+# 2. FORM DEFINITION (Kept)
 # ====================================================================
 
 class PurchaseForm(forms.Form):
@@ -47,25 +99,26 @@ class PurchaseForm(forms.Form):
         widget=forms.EmailInput(attrs={'class': 'form-control'})
     )
     phone_number = forms.CharField(
-        label='Mobile Money Number (e.g., 055xxxxxxx)',
+        label='Mobile Money Number (e.g., 024xxxxxxx)',
         max_length=20,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
 
 # ====================================================================
-# 2. PAYMENT INITIATION VIEW (The /buy/1/ page)
+# 3. PAYMENT INITIATION VIEW (The /buy/<paper_slug>/ page) - UPDATED
 # ====================================================================
 
-def initiate_payment(request, paper_id):
+# CRITICAL CHANGE: Changed from paper_id to paper_slug
+def initiate_payment(request, paper_slug):
     """
     Handles displaying the form and initiating the payment with Paystack.
     """
     try:
-        # 1. Get the Question Paper object
-        paper = get_object_or_404(QuestionPaper, id=paper_id)
+        # 1. Get the Question Paper object using the slug
+        paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     except Exception:
-        return render(request, 'error.html', {'message': 'The requested item was not found.'})
+        return render(request, 'shop/error.html', {'message': 'The requested item was not found.'})
 
     if request.method == 'POST':
         form = PurchaseForm(request.POST)
@@ -81,20 +134,19 @@ def initiate_payment(request, paper_id):
                 phone_number=phone_number
             )
             
-            # 3. Paystack API Call Setup
+            # 3. Paystack API Call Setup (Same logic)
             url = "https://api.paystack.co/transaction/initialize"
             headers = {
                 "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
                 "Content-Type": "application/json"
             }
             
-            # Prepare data for Paystack. Amount must be in the smallest currency unit (Pesewas/Kobo)
             data = {
                 "email": email,
-                "amount": payment.amount_in_kobo(),  # e.g., 10.00 GHS * 100 = 1000
+                "amount": payment.amount_in_kobo(),
                 "currency": settings.CURRENCY_CODE,
-                "reference": str(payment.ref), # Converted UUID to string for JSON serialization
-                "callback_url": f"http://{request.get_host()}/payment/callback/", # Placeholder for user redirect
+                "reference": str(payment.ref),
+                "callback_url": f"http://{request.get_host()}{reverse('shop:payment_callback')}", # Uses reverse()
                 "channels": ["mobile_money"],
             }
             
@@ -107,38 +159,34 @@ def initiate_payment(request, paper_id):
                 return redirect(response_data['data']['authorization_url'])
             else:
                 # 6. Failure: Show a generic error page with the message from Paystack
-                return render(request, 'error.html', {'message': response_data.get('message', 'Could not initiate payment.')})
+                return render(request, 'shop/error.html', {'message': response_data.get('message', 'Could not initiate payment.')})
     
     # 7. Initial GET request: Display the form
     else:
         form = PurchaseForm()
 
-    return render(request, 'buy_paper.html', {'form': form, 'paper': paper})
+    return render(request, 'shop/buy_paper.html', {'form': form, 'paper': paper})
 
 
 # ====================================================================
-# 2.5. PAYMENT CALLBACK VIEW (The /payment/callback/ page)
+# 4. PAYMENT CALLBACK VIEW (The /payment/callback/ page) - KEPT
 # ====================================================================
 
 def payment_callback(request):
     """
     Handles the user redirect after payment on the Paystack gateway.
-    It doesn't verify the payment here; verification happens via the webhook.
     """
-    # Paystack adds trxref and reference to the GET request.
     reference = request.GET.get('reference')
-    
-    # We don't need to do much here, just show a friendly message.
-    # The actual fulfillment (verification and SMS) is handled by the webhook.
     
     context = {
         'reference': reference,
     }
-    return render(request, 'callback_success.html', context)
+    # Ensure this template path is correct
+    return render(request, 'shop/callback_success.html', context)
 
 
 # ====================================================================
-# 3. PAYSTACK WEBHOOK HANDLER (The /webhooks/paystack/ page)
+# 5. PAYSTACK WEBHOOK HANDLER (The /webhooks/paystack/ page) - KEPT
 # ====================================================================
 
 @csrf_exempt
@@ -147,17 +195,17 @@ def paystack_webhook(request):
     Handles POST requests from Paystack, verifies the payment, marks it as verified, 
     and triggers the SMS with the password.
     """
-    # 1. Check for POST Request (Webhooks are POSTs)
     if request.method != 'POST':
         return HttpResponse(status=400)
 
-    # 2. Read the payload
     try:
+        # Check for Paystack signature for security (Optional, but best practice)
+        # signature = request.headers.get('x-paystack-signature') 
+        
         payload = json.loads(request.body)
     except json.JSONDecodeError:
         return HttpResponse(status=400)
 
-    # 3. Process successful transaction events
     if payload.get('event') == 'charge.success':
         reference = payload['data']['reference']
         
@@ -175,7 +223,6 @@ def paystack_webhook(request):
         verification_response = requests.get(verification_url, headers=headers)
         verification_data = verification_response.json()
 
-        # Check if Paystack confirms success AND the amount matches what we expected
         if (verification_data['data']['status'] == 'success' and 
             verification_data['data']['amount'] == payment.amount_in_kobo()):
             
@@ -184,22 +231,21 @@ def paystack_webhook(request):
                 payment.verified = True
                 payment.save()
 
-                # Get the password for the purchased paper
                 question_paper = payment.question_paper
                 
                 # Compose the SMS message
-                message = f"Your password for {question_paper.title} is: {question_paper.password}. Thank you for your purchase!"
+                message = f"Your password for {question_paper.title} is: {question_paper.password}. Thank you for your purchase from DarkSon Solutions!" # Updated name
                 
                 # Arkesel API Details
                 arkesel_url = "https://sms.arkesel.com/api/v2/sms/send"
                 arkesel_payload = {
-                    "sender": "MoMoSite", 
+                    "sender": "DarkSon", # Changed sender ID to reflect new brand
                     "message": message,
                     "recipients": [payment.phone_number],
                     "apiKey": settings.ARKESEL_API_KEY
                 }
 
-                # Send the SMS via Arkesel
+                # Send the SMS via Arkesel (Fire and Forget)
                 requests.post(arkesel_url, json=arkesel_payload)
                 
                 # Success Response for Paystack (MUST be 200 OK)
@@ -208,20 +254,8 @@ def paystack_webhook(request):
             # If payment was already verified (webhook sent twice)
             return JsonResponse({'status': 'success', 'message': 'Payment already verified'}, status=200)
 
-        # If verification fails (e.g., amount mismatch or Paystack says failed)
+        # If verification fails 
         return JsonResponse({'status': 'error', 'message': 'Payment verification failed'}, status=400)
 
     # Respond successfully to all other Paystack events
     return JsonResponse({'status': 'success', 'message': 'Webhook received, but not a charge success event'}, status=200)
-
-    # MoMoDownloadSite/shop/views.py (Add this function)
-
-def paper_list(request):
-    """
-    Displays a list of all available question papers for users to select.
-    """
-    papers = QuestionPaper.objects.all()
-    context = {
-        'papers': papers
-    }
-    return render(request, 'paper_list.html', context)

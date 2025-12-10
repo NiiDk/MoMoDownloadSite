@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Complete - Thank You!{% endblock title %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card text-center shadow-lg border-success border-3">
+                <div class="card-body p-5">
+                    <h1 class="text-success display-3 mb-4">✅ Success!</h1>
+                    <h2 class="mb-4">Your Purchase is Complete</h2>
+                    
+                    <div class="alert alert-success mt-4">
+                        <h4 class="alert-heading">Password Sent!</h4>
+                        <p class="lead">Please check your mobile phone for an SMS containing your secure download password.</p>
+                        <hr>
+                        <p class="mb-0 small">Transaction Reference: <strong>{{ reference }}</strong></p>
+                    </div>
+
+                    <a href="{% url 'shop:class_list' %}" class="btn btn-primary btn-lg mt-4">
+                        Return to Homepage
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
