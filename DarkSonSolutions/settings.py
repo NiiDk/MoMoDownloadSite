@@ -1,10 +1,11 @@
-# MoMoDownloadSite/settings.py
+# DarkSonSolutions/settings.py
 
 """
-Django settings for MoMoDownloadSite project.
+Django settings for DarkSonSolutions project.
 """
 
 from pathlib import Path
+# No change needed here if 'python-decouple' is in requirements.txt:
 from decouple import config 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,7 +21,6 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: Do NOT deploy with DEBUG = True!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# 🔥 CORRECTION APPLIED HERE: Added the specific domain
 ALLOWED_HOSTS = [
     '127.0.0.1', 
     'localhost', 
@@ -62,6 +62,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # 🔥 FIX 1: ADD WHITE NOISE HERE to serve static files in production (fixes Admin CSS)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -135,6 +137,9 @@ STATIC_URL = 'static/'
 
 # Directory where static files will be collected by 'collectstatic'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# 🔥 FIX 2: TELL WHITENOISE HOW TO HANDLE STATIC FILES IN PRODUCTION
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
