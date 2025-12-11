@@ -1,4 +1,4 @@
-# shop/views.py
+# shop/views.py (Replace the entire file content with this)
 
 import json
 import requests
@@ -6,22 +6,29 @@ from django import forms
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponse, FileResponse, Http404 
+from django.http import JsonResponse, HttpResponse, FileResponse, Http404
 from django.urls import reverse
 from django.db import models
-from django.core.mail import EmailMessage # <--- NEW IMPORT
-from .models import Classes, Term, Subject, QuestionPaper, Payment
-import os 
+from django.core.mail import EmailMessage
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+from django.views.decorators.http import require_POST
+import logging
+from datetime import datetime
+import os
+from .email_utils import EmailService # <--- CRITICAL NEW IMPORT
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # ====================================================================
-# 1. HIERARCHICAL LIST VIEWS (Navigation)
+# 1. HIERARCHICAL LIST VIEWS (Navigation) - UNCHANGED
 # ====================================================================
 
 # 1.1. Homepage: List all Classes/Grades
 def class_list(request):
     """
     Displays the top-level list of all available Classes (e.g., JHS 1).
-    This is the new homepage, aliased by the root URL '/'.
     """
     classes = Classes.objects.all()
     context = {
@@ -37,10 +44,7 @@ def term_list(request, class_slug):
     Displays the list of terms (Term 1, 2, 3) available for the selected Class.
     """
     class_level = get_object_or_404(Classes, slug=class_slug)
-    
-    # FIX APPLIED HERE: Used the correct related_name 'terms' defined in shop/models.py
     terms = class_level.terms.all()
-    
     context = {
         'class_level': class_level,
         'terms': terms,
@@ -52,13 +56,10 @@ def term_list(request, class_slug):
 def subject_list(request, class_slug, term_slug):
     """
     Displays the list of subjects available for the selected Class and Term.
-    Optimized with prefetch_related for better performance.
     """
     class_level = get_object_or_404(Classes, slug=class_slug)
-    # IMPORTANT: Assumes Term model has a ForeignKey to Classes named 'class_name'
     term = get_object_or_404(Term, class_name=class_level, slug=term_slug) 
     
-    # Get all subjects with prefetched paper counts for this class/term
     subjects = Subject.objects.all().prefetch_related(
         models.Prefetch(
             'papers',
@@ -82,9 +83,7 @@ def subject_list(request, class_slug, term_slug):
 def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
     """
     Displays the specific paper that the user can purchase (the product page).
-    Adds dynamic button text and URL based on the 'is_paid' status.
     """
-    # Fetch the specific Question Paper based on all slugs
     paper = get_object_or_404(QuestionPaper, 
         class_level__slug=class_slug,
         term__slug=term_slug,
@@ -92,29 +91,25 @@ def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
         slug=paper_slug
     )
 
-    # === DYNAMIC BUTTON LOGIC ===
     if paper.is_paid:
-        # If paid, use the payment initiation URL
         button_url = reverse('shop:buy_paper', args=[paper.slug])
         button_text = "Buy Now & Get Password via SMS"
     else:
-        # If free, use the new dedicated free download landing page URL
         button_url = reverse('shop:download_page', args=[paper.slug])
         button_text = "Free Download"
-    # ============================
     
     context = {
         'paper': paper,
         'page_title': paper.title,
         'currency_code': settings.CURRENCY_CODE,
-        'button_url': button_url,      # Passed to paper_detail.html
-        'button_text': button_text     # Passed to paper_detail.html
+        'button_url': button_url,     
+        'button_text': button_text    
     }
     return render(request, 'shop/paper_detail.html', context)
 
 
 # ====================================================================
-# 2. FORM DEFINITION (ADD CONTACT FORM)
+# 2. FORM DEFINITION - UNCHANGED
 # ====================================================================
 
 class PurchaseForm(forms.Form):
@@ -129,38 +124,17 @@ class PurchaseForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
-
-class ContactForm(forms.Form):
-    """Simple form for contact enquiries."""
-    name = forms.CharField(
-        label='Your Name',
-        max_length=100,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., John Doe'})
-    )
-    email = forms.EmailField(
-        label='Your Email Address',
-        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@domain.com'})
-    )
-    subject = forms.CharField(
-        label='Subject',
-        max_length=200,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enquiry about pricing'})
-    )
-    message = forms.Field(
-        label='Your Message / Suggestion',
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Please type your message here...'})
-    )
+# Note: The original ContactForm is removed since the new contact form is AJAX-based 
+# and handles validation in the view using standard Django/Python validation.
 
 
 # ====================================================================
-# 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION
+# 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION - UNCHANGED
 # ====================================================================
 
 def initiate_payment_or_download(request, paper_slug):
     """
     Handles 'shop:buy_paper'. Checks the 'is_paid' flag:
-    - If False (free), redirects to the new free download landing page.
-    - If True (paid), proceeds with Paystack payment initiation form.
     """
     try:
         paper = get_object_or_404(QuestionPaper, slug=paper_slug)
@@ -169,7 +143,6 @@ def initiate_payment_or_download(request, paper_slug):
 
     # === CONDITIONAL LOGIC ===
     if not paper.is_paid:
-        # If the paper is FREE, redirect to the new landing page
         return redirect('shop:download_page', paper_slug=paper.slug)
     
     # === ORIGINAL PAID LOGIC (IF is_paid is checked/True) ===
@@ -221,7 +194,7 @@ def initiate_payment_or_download(request, paper_slug):
 
 
 # ====================================================================
-# 4. FREE DOWNLOAD LANDING PAGE
+# 4. FREE DOWNLOAD LANDING PAGE - UNCHANGED
 # ====================================================================
 
 def free_download_landing(request, paper_slug):
@@ -230,7 +203,6 @@ def free_download_landing(request, paper_slug):
     """
     paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     
-    # URL to the actual file serving view
     file_download_url = reverse('shop:download_file', args=[paper.slug])
     
     context = {
@@ -241,7 +213,7 @@ def free_download_landing(request, paper_slug):
 
 
 # ====================================================================
-# 5. ACTUAL FILE DOWNLOAD VIEW
+# 5. ACTUAL FILE DOWNLOAD VIEW - UNCHANGED
 # ====================================================================
 
 def download_file(request, paper_slug):
@@ -250,7 +222,6 @@ def download_file(request, paper_slug):
     """
     paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     
-    # Optional check: Block paid papers if someone finds this direct link
     if paper.is_paid:
         raise Http404("This file requires payment.")
 
@@ -258,11 +229,9 @@ def download_file(request, paper_slug):
         raise Http404("This paper does not have an associated file for download.")
 
     try:
-        # Get the absolute path to the file
         file_path = paper.pdf_file.path 
         file_handle = open(file_path, 'rb')
         
-        # FileResponse handles streaming the file content efficiently
         response = FileResponse(
             file_handle, 
             as_attachment=True, 
@@ -277,7 +246,7 @@ def download_file(request, paper_slug):
 
 
 # ====================================================================
-# 6. PAYMENT CALLBACK VIEW
+# 6. PAYMENT CALLBACK VIEW - UNCHANGED
 # ====================================================================
 
 def payment_callback(request):
@@ -293,7 +262,7 @@ def payment_callback(request):
 
 
 # ====================================================================
-# 7. PAYSTACK WEBHOOK HANDLER
+# 7. PAYSTACK WEBHOOK HANDLER - UNCHANGED
 # ====================================================================
 
 @csrf_exempt
@@ -362,89 +331,62 @@ def paystack_webhook(request):
 
 
 # ====================================================================
-# 8. Placeholder Views (ADD CONTACT VIEW)
+# 8. CONTACT VIEWS (ROBUST ASYNC EMAIL)
 # ====================================================================
 
-def contact_us(request):
+def contact(request):
     """
-    Handles the contact form submission, sends the admin message with a dynamic
-    Reply-To header, and sends a confirmation to the visitor.
+    [GET request] Displays contact form page (renders the new contact.html template)
     """
-    if request.method == 'POST':
-        form = ContactForm(request.POST)
-        if form.is_valid():
-            name = form.cleaned_data['name']
-            visitor_email = form.cleaned_data['email']
-            subject = form.cleaned_data['subject']
-            message = form.cleaned_data['message']
-            
-            # --- 1. COMPOSE EMAIL TO ADMIN (The one you receive) ---
-            
-            # The subject you see in your inbox
-            admin_subject = f"[WEBSITE CONTACT] {subject} - From: {name}" 
-            
-            # The body includes all the visitor's details
-            email_body = (
-                f"Message received from the website contact form.\n\n"
-                f"Name: {name}\n"
-                f"Email: {visitor_email}\n"
-                f"Subject: {subject}\n\n"
-                f"--- MESSAGE CONTENT ---\n{message}\n---------------------\n"
-            )
-            
-            # Use EmailMessage to set the dynamic Reply-To header
-            admin_message = EmailMessage(
-                subject=admin_subject,
-                body=email_body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=['darkosammy2@gmail.com'], # Your receiving email address
-                reply_to=[visitor_email],      # <--- CRUCIAL: Makes Reply button target the visitor
-            )
-            
-            # --- 2. COMPOSE CONFIRMATION EMAIL TO VISITOR ---
-            confirmation_body = (
-                f"Dear {name},\n\n"
-                f"Thank you for reaching out to us. We have successfully received your message "
-                f"regarding: '{subject}'. We will review your query and respond to you shortly.\n\n"
-                f"Please note: This is an automated confirmation.\n\n"
-                f"Best Regards,\n"
-                f"The Insight Innovations Team"
-            )
-            
-            visitor_message = EmailMessage(
-                subject=f"Confirmation: We received your message",
-                body=confirmation_body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[visitor_email],
-            )
-            
-            try:
-                # 3. Send both emails
-                admin_message.send(fail_silently=False)
-                visitor_message.send(fail_silently=True) 
-                
-                # Success message handling
-                messages.success(request, "Your message has been sent successfully! We will be in touch soon.")
-                
-                # Redirect back to the contact page, showing success message
-                return redirect('contact_us') 
-
-            except Exception as e:
-                # Log the error for debugging and show a user friendly message
-                print(f"EMAIL SENDING ERROR: {e}")
-                messages.error(request, "We were unable to send your message due to a server error. Please try again later.")
-                return redirect('contact_us') 
-
-        else:
-            # If form is invalid, re-render the page with errors
-            messages.error(request, "Please correct the errors in the form.")
-    
-    else:
-        # GET request: Display the empty form
-        form = ContactForm()
-
+    from django.conf import settings
     context = {
-        'page_title': 'Contact Us',
-        'form': form
+        'title': 'Contact Us',
+        'admin_email': settings.EMAIL_HOST_USER,
     }
-    return render(request, 'shop/contact_us.html', context)
+    return render(request, 'shop/contact.html', context)
+
+
+@require_POST
+@csrf_exempt 
+def contact_view(request):
+    """
+    [POST request / AJAX Endpoint] Handle contact form submissions using EmailService.
+    """
+    try:
+        data = json.loads(request.body)
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        subject = data.get('subject', '').strip()
+        message = data.get('message', '').strip()
+        
+        # 1. Validation
+        if not all([name, email, subject, message]):
+            return JsonResponse({'success': False, 'error': 'All fields are required'}, status=400)
+        
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({'success': False, 'error': 'Invalid email address'}, status=400)
+
+        # 2. Log and Send
+        logger.info(f"📨 Contact form submission from {name} <{email}>")
+        
+        # This function uses the non-blocking thread/timeout logic
+        success, error = EmailService.send_contact_email(
+            name=name,
+            visitor_email=email,
+            subject=subject,
+            message=message
+        )
+        
+        if success:
+            return JsonResponse({'success': True, 'message': 'Your message has been sent successfully! We will be in touch shortly.'})
+        else:
+            logger.error(f"❌ Failed to send contact email: {error}. Check 'failed_emails.log'.")
+            return JsonResponse({'success': False, 'error': f'Failed to send message. (Server Error: {error})'}, status=500)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid request data format'}, status=400)
+    except Exception as e:
+        logger.error(f"🔥 Unexpected error in contact_view: {str(e)}")
+        return JsonResponse({'success': False, 'error': 'An unexpected server error occurred.'}, status=500)

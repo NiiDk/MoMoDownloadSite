@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-4">{{ title }}</h2>
+            <p>We are here to help! Please fill out the form below, and we will get back to you as soon as possible. Alternatively, you can email us directly at <strong>{{ admin_email }}</strong>.</p>
+
+            <div id="form-message-container" class="mb-3">
+                </div>
+
+            <form id="contact-form" method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="id_name" class="form-label">Your Name</label>
+                    <input type="text" class="form-control" id="id_name" name="name" required placeholder="e.g., John Doe">
+                </div>
+                <div class="mb-3">
+                    <label for="id_email" class="form-label">Your Email Address</label>
+                    <input type="email" class="form-control" id="id_email" name="email" required placeholder="example@domain.com">
+                </div>
+                <div class="mb-3">
+                    <label for="id_subject" class="form-label">Subject</label>
+                    <input type="text" class="form-control" id="id_subject" name="subject" required placeholder="Enquiry about pricing or files">
+                </div>
+                <div class="mb-3">
+                    <label for="id_message" class="form-label">Your Message / Suggestion</label>
+                    <textarea class="form-control" id="id_message" name="message" rows="5" required placeholder="Please type your message here..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="submit-button">
+                    <span id="button-text">Send Message</span>
+                    <span id="loading-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('contact-form');
+        const messageContainer = document.getElementById('form-message-container');
+        const submitButton = document.getElementById('submit-button');
+        const buttonText = document.getElementById('button-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+
+        function showStatusMessage(isSuccess, message) {
+            messageContainer.innerHTML = `
+                <div class="alert alert-${isSuccess ? 'success' : 'danger'}" role="alert">
+                    ${message}
+                </div>
+            `;
+        }
+
+        function toggleLoading(isLoading) {
+            submitButton.disabled = isLoading;
+            if (isLoading) {
+                buttonText.style.display = 'none';
+                loadingSpinner.style.display = 'inline-block';
+            } else {
+                buttonText.style.display = 'inline-block';
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Stop the standard form submission
+            
+            // Clear previous messages
+            messageContainer.innerHTML = '';
+            toggleLoading(true);
+
+            const formData = {
+                name: document.getElementById('id_name').value,
+                email: document.getElementById('id_email').value,
+                subject: document.getElementById('id_subject').value,
+                message: document.getElementById('id_message').value,
+            };
+
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const apiEndpoint = "{% url 'shop:contact_api' %}";
+
+            fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json().then(data => ({
+                status: response.status,
+                body: data
+            })))
+            .then(result => {
+                toggleLoading(false);
+                
+                if (result.status >= 200 && result.status < 300) {
+                    // Success (200 OK)
+                    showStatusMessage(true, result.body.message);
+                    form.reset(); // Clear the form on successful submission
+                } else {
+                    // Error (400, 500, etc.)
+                    const errorMessage = result.body.error || 'An unknown error occurred on the server.';
+                    showStatusMessage(false, errorMessage);
+                }
+            })
+            .catch(error => {
+                // Network or other critical fetch error
+                console.error('Fetch error:', error);
+                toggleLoading(false);
+                showStatusMessage(false, 'A critical connection error occurred. Please check your internet or try again.');
+            });
+        });
+    });
+</script>
+
+{% endblock content %}
