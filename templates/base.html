@@ -3,69 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}DarkSon Solutions - Educational Papers{% endblock %}</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>{% block title %}Insight Innovations{% endblock %}</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" 
+          rel="stylesheet" 
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
+          crossorigin="anonymous">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        .card-class { transition: transform 0.2s; }
-        .card-class:hover { transform: translateY(-5px); }
-        main { min-height: 70vh; padding-top: 20px; }
-        .navbar-brand { font-size: 1.5rem; }
-        footer { margin-top: 50px; }
+        .main-content {
+            min-height: calc(100vh - 140px); /* Adjust height for nav and footer */
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        .offcanvas-body .nav-link {
+            font-size: 1.1rem;
+        }
     </style>
+    
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="{% url 'shop:class_list' %}">
-                📚 DarkSon Solutions
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+    
+    <div class="offcanvas offcanvas-start bg-dark text-white" 
+         tabindex="-1" 
+         id="siteDrawer" 
+         aria-labelledby="siteDrawerLabel">
+
+        <div class="offcanvas-header border-bottom border-secondary">
+            <h5 class="offcanvas-title fw-bold" id="siteDrawerLabel">
+                <span class="text-info">📚</span> Insight Innovations
+            </h5>
+            <button type="button" 
+                    class="btn-close btn-close-white" 
+                    data-bs-dismiss="offcanvas" 
+                    aria-label="Close"></button>
+        </div>
+
+        <div class="offcanvas-body">
+            <nav class="drawer-nav">
+                <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+                    
+                    <li class="nav-item">
+                        <a href="{% url 'shop:class_list' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'class_list' or request.resolver_match.url_name == 'home' %}active fw-bold bg-primary bg-opacity-25 rounded{% endif %}">
+                            <i class="fas fa-home me-2"></i> Home (Classes)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'shop:buy_paper' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'buy_paper' %}active fw-bold bg-primary bg-opacity-25 rounded{% endif %}">
+                            <i class="fas fa-shopping-cart me-2"></i> Buy Papers
+                        </a>
+                    </li>
+                    <li class="nav-item my-2">
+                        <hr class="text-white-50">
+                        <h6 class="text-secondary text-uppercase ms-3 mt-3">Account & History</h6>
+                    </li>
+
                     {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'admin:index' %}">Admin Panel</a>
+                        <a href="{% url 'shop:profile' %}" class="nav-link text-white">
+                            <i class="fas fa-user me-2"></i> My Profile
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'shop:purchase_history' %}" class="nav-link text-white">
+                            <i class="fas fa-history me-2"></i> Purchase History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'shop:logout' %}" class="nav-link text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i> Logout
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a href="{% url 'shop:login' %}" class="nav-link text-white">
+                            <i class="fas fa-sign-in-alt me-2"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'shop:register' %}" class="nav-link text-white">
+                            <i class="fas fa-user-plus me-2"></i> Register
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="nav-item my-2">
+                        <hr class="text-white-50">
+                        <h6 class="text-secondary text-uppercase ms-3 mt-3">Admin Access</h6>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-info" href="{% url 'admin:index' %}" target="_blank">
+                            <i class="fas fa-user-shield me-2"></i> Django Admin
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+        </div>
+    </div>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow">
+        <div class="container">
+            
+            <button class="btn btn-outline-info me-3 d-lg-none" 
+                    type="button" 
+                    data-bs-toggle="offcanvas" 
+                    data-bs-target="#siteDrawer" 
+                    aria-controls="siteDrawer">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <a class="navbar-brand fw-bold" href="{% url 'shop:class_list' %}">
+                <span class="text-info">📚</span> Insight Innovations
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'shop:class_list' %}">Classes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'shop:buy_paper' %}">Buy Papers</a>
+                    </li>
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'shop:profile' %}">Profile</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-info text-dark fw-bold ms-2" href="{% url 'shop:login' %}">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
                     </li>
                     {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
+    
+    {% if breadcrumbs %}
+        {% include 'shop/breadcrumbs.html' %}
+    {% endif %}
 
-    <!-- Page Header -->
-    <div class="container mt-4">
-        <div class="text-center">
-            <h1 class="mb-4 text-primary">{% block page_title %}{% endblock %}</h1>
-            {% if is_homepage %}
-                <p class="lead text-muted">Select your academic level to start browsing question papers</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <main class="container my-4">
+    <main class="container main-content">
         {% block content %}
-        <!-- Child templates will insert content here -->
         {% endblock %}
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-light text-center text-muted py-4 mt-5 border-top">
+    <footer class="bg-dark text-white py-4 mt-4 border-top border-info border-opacity-50">
         <div class="container">
-            <p class="mb-1 fw-bold">DarkSon Solutions Educational Papers Shop</p>
-            <p class="small mb-1">Secure download passwords delivered via SMS after Mobile Money payment</p>
-            <p class="small mb-0">© {% now "Y" %} All rights reserved</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="text-info">Insight Innovations</h5>
+                    <p class="small text-white-50">Your trusted source for educational papers and resources.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="small">&copy; {% now "Y" %} Insight Innovations. All rights reserved.</p>
+                </div>
+            </div>
         </div>
     </footer>
 
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+            crossorigin="anonymous"></script>
     
-    <!-- Optional: Your custom JS -->
     {% block extra_js %}{% endblock %}
 </body>
 </html>

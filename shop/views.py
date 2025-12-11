@@ -250,7 +250,7 @@ def paystack_webhook(request):
                 # Arkesel API Details
                 arkesel_url = "https://sms.arkesel.com/api/v2/sms/send"
                 arkesel_payload = {
-                    "sender": "DarkSon", # Changed sender ID to reflect new brand
+                    "sender": "Insight Innovations", # Changed sender ID to reflect new brand
                     "message": message,
                     "recipients": [payment.phone_number],
                     "apiKey": settings.ARKESEL_API_KEY
