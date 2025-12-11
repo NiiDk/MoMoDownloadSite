@@ -365,32 +365,11 @@ def paystack_webhook(request):
 # 8. Placeholder Views (ADD CONTACT VIEW)
 # ====================================================================
 
-def profile(request):
-    """Placeholder for My Profile view."""
-    return render(request, 'shop/profile.html', {'page_title': 'My Profile'})
-
-def purchase_history(request):
-    """Placeholder for Purchase History view."""
-    return render(request, 'shop/purchase_history.html', {'page_title': 'Purchase History'})
-
-def login(request):
-    """Placeholder for Login view."""
-    return redirect('admin:login')
-
-def logout(request):
-    """Placeholder for Logout view."""
-    return redirect('shop:class_list')
-
-def register(request):
-    """Placeholder for Register view."""
-    return render(request, 'shop/register.html', {'page_title': 'Register'})
-
-
 def contact_us(request):
     """
-    Handles the contact form display and submission, and sends the message via email.
+    Handles the contact form submission, sends the admin message with a dynamic
+    Reply-To header, and sends a confirmation to the visitor.
     """
-    # === UPDATED IMPORT: send_mail is now imported at the top of the file ===
     if request.method == 'POST':
         form = ContactForm(request.POST)
         if form.is_valid():
@@ -399,67 +378,73 @@ def contact_us(request):
             subject = form.cleaned_data['subject']
             message = form.cleaned_data['message']
             
-            # 1. Compose the Email Content
-            full_subject = f"[CONTACT FORM] {subject} - From: {name}"
-            email_body = f"Message received from the website contact form.\n\n"
-            email_body += f"Name: {name}\n"
-            email_body += f"Email: {visitor_email}\n"
-            email_body += f"Subject: {subject}\n\n"
-            email_body += f"--- MESSAGE CONTENT ---\n{message}\n---------------------\n"
+            # --- 1. COMPOSE EMAIL TO ADMIN (The one you receive) ---
+            
+            # The subject you see in your inbox
+            admin_subject = f"[WEBSITE CONTACT] {subject} - From: {name}" 
+            
+            # The body includes all the visitor's details
+            email_body = (
+                f"Message received from the website contact form.\n\n"
+                f"Name: {name}\n"
+                f"Email: {visitor_email}\n"
+                f"Subject: {subject}\n\n"
+                f"--- MESSAGE CONTENT ---\n{message}\n---------------------\n"
+            )
+            
+            # Use EmailMessage to set the dynamic Reply-To header
+            admin_message = EmailMessage(
+                subject=admin_subject,
+                body=email_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=['darkosammy2@gmail.com'], # Your receiving email address
+                reply_to=[visitor_email],      # <--- CRUCIAL: Makes Reply button target the visitor
+            )
+            
+            # --- 2. COMPOSE CONFIRMATION EMAIL TO VISITOR ---
+            confirmation_body = (
+                f"Dear {name},\n\n"
+                f"Thank you for reaching out to us. We have successfully received your message "
+                f"regarding: '{subject}'. We will review your query and respond to you shortly.\n\n"
+                f"Please note: This is an automated confirmation.\n\n"
+                f"Best Regards,\n"
+                f"The Insight Innovations Team"
+            )
+            
+            visitor_message = EmailMessage(
+                subject=f"Confirmation: We received your message",
+                body=confirmation_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[visitor_email],
+            )
             
             try:
-                # 2. Send Email to the Admin (Your Account)
-                send_mail(
-                    full_subject,
-                    email_body,
-                    settings.DEFAULT_FROM_EMAIL, # Sender (configured in settings.py)
-                    ['darkosammy2@gmail.com'], # Admin Recipient (Your Email)
-                    fail_silently=False,
-                )
+                # 3. Send both emails
+                admin_message.send(fail_silently=False)
+                visitor_message.send(fail_silently=True) 
                 
-                # Optional: Send Confirmation to the Visitor (Good practice)
-                send_mail(
-                    f"Confirmation: We received your message",
-                    f"Dear {name},\n\nThank you for reaching out to us. We have received your message regarding: '{subject}'. We will respond as soon as possible.\n\n---\nInsight Innovations Team",
-                    settings.DEFAULT_FROM_EMAIL,
-                    [visitor_email],
-                    fail_silently=True,
-                )
+                # Success message handling
+                messages.success(request, "Your message has been sent successfully! We will be in touch soon.")
                 
-                context = {
-                    'page_title': 'Message Sent',
-                    'success': True,
-                    'name': name
-                }
-                return render(request, 'shop/contact_us.html', context)
+                # Redirect back to the contact page, showing success message
+                return redirect('contact_us') 
 
             except Exception as e:
-                # Handle email sending errors (e.g., incorrect settings)
-                print(f"Error sending contact email: {e}")
-                # Re-display the form with an error message
-                context = {
-                    'page_title': 'Contact Us - Error',
-                    'form': form,
-                    'success': False,
-                    'email_error': 'There was a server error sending your message. Please try again or call us.',
-                    'phone': '+233542232515', 
-                    'email': 'darkosammy2@gmail.com',
-                    'location': 'Accra, Ghana'
-                }
-                return render(request, 'shop/contact_us.html', context)
+                # Log the error for debugging and show a user friendly message
+                print(f"EMAIL SENDING ERROR: {e}")
+                messages.error(request, "We were unable to send your message due to a server error. Please try again later.")
+                return redirect('contact_us') 
+
+        else:
+            # If form is invalid, re-render the page with errors
+            messages.error(request, "Please correct the errors in the form.")
     
-    # Initial GET request or non-valid form submission
     else:
+        # GET request: Display the empty form
         form = ContactForm()
-    
-    # Context for displaying the form
+
     context = {
         'page_title': 'Contact Us',
-        'form': form,
-        'success': False,
-        # Static Contact Details to display on the page
-        'phone': '+233542232515', 
-        'email': 'darkosammy2@gmail.com',
-        'location': 'Accra, Ghana'
+        'form': form
     }
     return render(request, 'shop/contact_us.html', context)

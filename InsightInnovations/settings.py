@@ -55,8 +55,8 @@ EMAIL_PORT = config('EMAIL_PORT', cast=int)       # e.g., 587
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool) # e.g., True
 
 # 3. Credentials (Pulled from .env where App Password is set)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')        # e.g., darkosammy2@gmail.com
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD') # Your 16-character App Password
+EMAIL_PORT = config('EMAIL_PORT', cast=int)       # Expects 587 from .env
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool) # Expects True from .env
 
 # 4. Set the default sender
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER') 
