@@ -1,2 +1,2 @@
 # Procfile content
-web: gunicorn DarkSonSolutions.wsgi
+web: gunicorn InsightInnovations.wsgi
