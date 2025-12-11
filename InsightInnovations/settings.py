@@ -26,7 +26,7 @@ ALLOWED_HOSTS = [
     'localhost', 
     config('NGROK_TUNNEL', default=''), 
     '.render.com', 
-    'InsightInnovations.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
+    'DarkSonSolutions.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
     config('RENDER_EXTERNAL_HOSTNAME', default=''),
 ]
 
