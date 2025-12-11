@@ -58,6 +58,13 @@
                             <i class="fas fa-shopping-cart me-2"></i> Buy Papers
                         </a>
                     </li>
+                    
+                    <li class="nav-item">
+                        <a href="{% url 'shop:contact_us' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'contact_us' %}active fw-bold bg-primary bg-opacity-25 rounded{% endif %}">
+                            <i class="fas fa-envelope me-2"></i> Contact Us
+                        </a>
+                    </li>
                     <li class="nav-item my-2">
                         <hr class="text-white-50">
                         <h6 class="text-secondary text-uppercase ms-3 mt-3">Account & History</h6>
@@ -132,6 +139,10 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'shop:class_list' %}">Buy Papers</a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'shop:contact_us' %}">Contact</a>
                     </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item">

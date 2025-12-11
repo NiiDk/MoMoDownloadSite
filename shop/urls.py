@@ -30,6 +30,9 @@ urlpatterns = [
     path('logout/', views.logout, name='logout'),
     path('register/', views.register, name='register'),
     
+    # NEW: Contact Us Page
+    path('contact/', views.contact_us, name='contact_us'),
+    
     # 3. NAVIGATION VIEWS (Generic slug patterns MUST COME LAST)
     
     # 3.1. / (Homepage) - Lists all Classes/Grades

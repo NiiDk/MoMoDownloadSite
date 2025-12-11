@@ -77,7 +77,7 @@ def subject_list(request, class_slug, term_slug):
     }
     return render(request, 'shop/subject_list.html', context)
     
-# 1.4. Final Level: Paper Detail/Buy Page (REVISED FOR DYNAMIC BUTTON)
+# 1.4. Final Level: Paper Detail/Buy Page (UNCHANGED)
 def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
     """
     Displays the specific paper that the user can purchase (the product page).
@@ -91,7 +91,7 @@ def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
         slug=paper_slug
     )
 
-    # === DYNAMIC BUTTON LOGIC (NEW) ===
+    # === DYNAMIC BUTTON LOGIC ===
     if paper.is_paid:
         # If paid, use the payment initiation URL
         button_url = reverse('shop:buy_paper', args=[paper.slug])
@@ -113,7 +113,7 @@ def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
 
 
 # ====================================================================
-# 2. FORM DEFINITION (UNCHANGED)
+# 2. FORM DEFINITION (ADD CONTACT FORM)
 # ====================================================================
 
 class PurchaseForm(forms.Form):
@@ -129,8 +129,30 @@ class PurchaseForm(forms.Form):
     )
 
 
+class ContactForm(forms.Form):
+    """Simple form for contact enquiries."""
+    name = forms.CharField(
+        label='Your Name',
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., John Doe'})
+    )
+    email = forms.EmailField(
+        label='Your Email Address',
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@domain.com'})
+    )
+    subject = forms.CharField(
+        label='Subject',
+        max_length=200,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enquiry about pricing'})
+    )
+    message = forms.Field(
+        label='Your Message / Suggestion',
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Please type your message here...'})
+    )
+
+
 # ====================================================================
-# 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION (REVISED)
+# 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION (UNCHANGED)
 # ====================================================================
 
 def initiate_payment_or_download(request, paper_slug):
@@ -147,7 +169,6 @@ def initiate_payment_or_download(request, paper_slug):
     # === CONDITIONAL LOGIC ===
     if not paper.is_paid:
         # If the paper is FREE, redirect to the new landing page
-        # This prevents the user from seeing the payment form momentarily
         return redirect('shop:download_page', paper_slug=paper.slug)
     
     # === ORIGINAL PAID LOGIC (IF is_paid is checked/True) ===
@@ -199,13 +220,12 @@ def initiate_payment_or_download(request, paper_slug):
 
 
 # ====================================================================
-# 4. FREE DOWNLOAD LANDING PAGE (NEW VIEW)
+# 4. FREE DOWNLOAD LANDING PAGE (UNCHANGED)
 # ====================================================================
 
 def free_download_landing(request, paper_slug):
     """
     Renders the page that says "Free Download" and gives the final file link.
-    This view resolves the 'shop:download_page' URL.
     """
     paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     
@@ -220,13 +240,12 @@ def free_download_landing(request, paper_slug):
 
 
 # ====================================================================
-# 5. ACTUAL FILE DOWNLOAD VIEW (RENAMED from download_paper to download_file)
+# 5. ACTUAL FILE DOWNLOAD VIEW (UNCHANGED)
 # ====================================================================
 
 def download_file(request, paper_slug):
     """
     Serves the file directly to the user's browser.
-    This view resolves the 'shop:download_file' URL.
     """
     paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     
@@ -342,7 +361,7 @@ def paystack_webhook(request):
 
 
 # ====================================================================
-# 8. Placeholder Views (UNCHANGED)
+# 8. Placeholder Views (ADD CONTACT VIEW)
 # ====================================================================
 
 def profile(request):
@@ -364,3 +383,35 @@ def logout(request):
 def register(request):
     """Placeholder for Register view."""
     return render(request, 'shop/register.html', {'page_title': 'Register'})
+
+
+def contact_us(request):
+    """
+    Handles the contact form display and submission.
+    """
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            # In a production app, you would send the email here using Django's send_mail function.
+            
+            context = {
+                'page_title': 'Message Sent',
+                'success': True,
+                'name': form.cleaned_data['name']
+            }
+            return render(request, 'shop/contact_us.html', context)
+    
+    else:
+        form = ContactForm()
+    
+    context = {
+        'page_title': 'Contact Us',
+        'form': form,
+        'success': False,
+        
+        # Static Contact Details to display on the page
+        'phone': '+233 24 000 0000',
+        'email': 'support@insightinnovations.com',
+        'location': 'Accra, Ghana'
+    }
+    return render(request, 'shop/contact_us.html', context)
