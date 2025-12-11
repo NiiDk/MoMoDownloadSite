@@ -52,11 +52,11 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # 2. Connection Details (Pulled directly from .env)
 EMAIL_HOST = config('EMAIL_HOST')                  # e.g., smtp.gmail.com
 EMAIL_PORT = config('EMAIL_PORT', cast=int)       # e.g., 587
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool) # e.g., True
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool) # e.g., True
 
 # 3. Credentials (Pulled from .env where App Password is set)
-EMAIL_PORT = config('EMAIL_PORT', cast=int)       # Expects 587 from .env
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool) # Expects True from .env
+EMAIL_PORT = config('EMAIL_PORT', cast=int)       # Expects 456 from .env
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=True, cast=bool) # Expects True from .env
 
 # 4. Set the default sender
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER') 
