@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse, FileResponse, Http404 
 from django.urls import reverse
 from django.db import models
-from django.core.mail import send_mail # <--- NEW IMPORT
+from django.core.mail import EmailMessage # <--- NEW IMPORT
 from .models import Classes, Term, Subject, QuestionPaper, Payment
 import os 
 
