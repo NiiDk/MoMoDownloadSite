@@ -16,7 +16,7 @@ import os
 # 1. HIERARCHICAL LIST VIEWS (Navigation)
 # ====================================================================
 
-# 1.1. Homepage: List all Classes/Grades (UNCHANGED)
+# 1.1. Homepage: List all Classes/Grades
 def class_list(request):
     """
     Displays the top-level list of all available Classes (e.g., JHS 1).
@@ -30,7 +30,7 @@ def class_list(request):
     }
     return render(request, 'shop/class_list.html', context)
     
-# 1.2. Second Level: List all Terms for a Class (UNCHANGED)
+# 1.2. Second Level: List all Terms for a Class
 def term_list(request, class_slug):
     """
     Displays the list of terms (Term 1, 2, 3) available for the selected Class.
@@ -47,7 +47,7 @@ def term_list(request, class_slug):
     }
     return render(request, 'shop/term_list.html', context)
 
-# 1.3. Third Level: List all Subjects for a Term (UNCHANGED)
+# 1.3. Third Level: List all Subjects for a Term
 def subject_list(request, class_slug, term_slug):
     """
     Displays the list of subjects available for the selected Class and Term.
@@ -77,7 +77,7 @@ def subject_list(request, class_slug, term_slug):
     }
     return render(request, 'shop/subject_list.html', context)
     
-# 1.4. Final Level: Paper Detail/Buy Page (UNCHANGED)
+# 1.4. Final Level: Paper Detail/Buy Page
 def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
     """
     Displays the specific paper that the user can purchase (the product page).
@@ -152,7 +152,7 @@ class ContactForm(forms.Form):
 
 
 # ====================================================================
-# 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION (UNCHANGED)
+# 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION
 # ====================================================================
 
 def initiate_payment_or_download(request, paper_slug):
@@ -186,7 +186,7 @@ def initiate_payment_or_download(request, paper_slug):
                 phone_number=phone_number
             )
             
-            # 2. Paystack API Call Setup (UNCHANGED)
+            # 2. Paystack API Call Setup
             url = "https://api.paystack.co/transaction/initialize"
             headers = {
                 "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
@@ -202,7 +202,7 @@ def initiate_payment_or_download(request, paper_slug):
                 "channels": ["mobile_money"],
             }
             
-            # 3. Make the request to Paystack (UNCHANGED)
+            # 3. Make the request to Paystack
             response = requests.post(url, headers=headers, data=json.dumps(data))
             response_data = response.json()
 
@@ -220,7 +220,7 @@ def initiate_payment_or_download(request, paper_slug):
 
 
 # ====================================================================
-# 4. FREE DOWNLOAD LANDING PAGE (UNCHANGED)
+# 4. FREE DOWNLOAD LANDING PAGE
 # ====================================================================
 
 def free_download_landing(request, paper_slug):
@@ -240,7 +240,7 @@ def free_download_landing(request, paper_slug):
 
 
 # ====================================================================
-# 5. ACTUAL FILE DOWNLOAD VIEW (UNCHANGED)
+# 5. ACTUAL FILE DOWNLOAD VIEW
 # ====================================================================
 
 def download_file(request, paper_slug):
@@ -276,7 +276,7 @@ def download_file(request, paper_slug):
 
 
 # ====================================================================
-# 6. PAYMENT CALLBACK VIEW (UNCHANGED)
+# 6. PAYMENT CALLBACK VIEW
 # ====================================================================
 
 def payment_callback(request):
@@ -292,7 +292,7 @@ def payment_callback(request):
 
 
 # ====================================================================
-# 7. PAYSTACK WEBHOOK HANDLER (UNCHANGED)
+# 7. PAYSTACK WEBHOOK HANDLER
 # ====================================================================
 
 @csrf_exempt
@@ -404,14 +404,15 @@ def contact_us(request):
     else:
         form = ContactForm()
     
+    # === UPDATED CONTACT DETAILS IN CONTEXT ===
     context = {
         'page_title': 'Contact Us',
         'form': form,
         'success': False,
         
         # Static Contact Details to display on the page
-        'phone': '+233 24 000 0000',
-        'email': 'support@insightinnovations.com',
+        'phone': '+233542232515', 
+        'email': 'darkosammy2@gmail.com', # <--- UPDATED
         'location': 'Accra, Ghana'
     }
     return render(request, 'shop/contact_us.html', context)

@@ -3,36 +3,71 @@
 {% block page_title %}Select Your Class/Grade{% endblock %}
 
 {% block content %}
-    <div class="text-center mb-5">
-        <h2 class="display-5 text-primary">Available Academic Levels</h2>
-        <p class="lead">Choose your class to browse available question papers</p>
-    </div>
-    
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for class_obj in classes %}
-            <div class="col">
-                <a href="{% url 'shop:term_list' class_obj.slug %}" class="text-decoration-none">
-                    <div class="card card-class text-center h-100 shadow border-primary">
-                        <div class="card-body p-4">
-                            <h5 class="card-title fw-bold text-primary display-6">{{ class_obj.name }}</h5>
-                            <p class="card-text text-muted mt-3">
-                                {{ class_obj.description|default:"Click to access Term 1, Term 2, and Term 3 papers for this grade." }}
+    <div class="text-center mb-5">
+        <h2 class="display-5 text-primary">Available Academic Levels</h2>
+        <p class="lead">Choose your class to browse available question papers</p>
+    </div>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for class_obj in classes %}
+            <div class="col">
+                <a href="{% url 'shop:term_list' class_obj.slug %}" class="text-decoration-none">
+                    <div class="card card-class text-center h-100 shadow border-primary">
+                        <div class="card-body p-4">
+                            <h5 class="card-title fw-bold text-primary display-6">{{ class_obj.name }}</h5>
+                            <p class="card-text text-muted mt-3">
+                                {{ class_obj.description|default:"Click to access Term 1, Term 2, and Term 3 papers for this grade." }}
+                            </p>
+                            <span class="btn btn-outline-primary mt-3">
+                                View Terms →
+                            </span>
+                        </div>
+                </a>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-warning text-center" role="alert">
+                    <h4 class="alert-heading">No Classes Found!</h4>
+                    <p>No academic levels have been added yet. Please log into the Admin panel to add classes.</p>
+                    <a href="{% url 'admin:index' %}" class="btn btn-outline-warning">Go to Admin</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <div class="row justify-content-center mt-5">
+        <div class="col-lg-10">
+            <div class="card bg-info text-white shadow-lg border-0">
+                <div class="card-body p-4 p-md-5">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            <h2 class="card-title mb-3"><i class="fas fa-question-circle me-2"></i> Have Questions or Suggestions?</h2>
+                            <p class="lead mb-4">
+                                Don't hesitate to reach out! We are here to assist with purchases, support, and feedback.
                             </p>
-                            <span class="btn btn-outline-primary mt-3">
-                                View Terms →
-                            </span>
+                            <a href="{% url 'shop:contact_us' %}" class="btn btn-warning btn-lg fw-bold text-dark">
+                                <i class="fas fa-envelope me-2"></i> Go to Contact Page
+                            </a>
+                        </div>
+                        <div class="col-md-5 mt-4 mt-md-0 text-md-end">
+                            <h5 class="mb-2">Direct Contact:</h5>
+                            <div class="d-flex justify-content-md-end align-items-center mb-3">
+                                <a href="tel:+233542232515" class="text-white me-3 fs-3" title="Phone Call">
+                                    <i class="fas fa-phone-alt"></i>
+                                </a>
+                                <a href="https://wa.me/233542232515" target="_blank" class="text-success me-3 fs-3" title="WhatsApp">
+                                    <i class="fab fa-whatsapp-square"></i>
+                                </a>
+                                <a href="mailto:darkosammy2@gmail.com" class="text-white fs-3" title="Send Email">
+                                    <i class="fas fa-envelope-square"></i>
+                                </a>
+                            </div>
+                            <p class="small mb-0 text-white-75">Phone: +233542232515</p>
+                            <p class="small mb-0 text-white-75">Email: darkosammy2@gmail.com</p>
                         </div>
                     </div>
-                </a>
-            </div>
-        {% empty %}
-            <div class="col-12">
-                <div class="alert alert-warning text-center" role="alert">
-                    <h4 class="alert-heading">No Classes Found!</h4>
-                    <p>No academic levels have been added yet. Please log into the Admin panel to add classes.</p>
-                    <a href="{% url 'admin:index' %}" class="btn btn-outline-warning">Go to Admin</a>
                 </div>
             </div>
-        {% endfor %}
+        </div>
     </div>
-{% endblock %}
+    {% endblock %}
