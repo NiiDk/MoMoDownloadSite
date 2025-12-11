@@ -39,8 +39,8 @@
                 </div>
                 
                 <div class="alert alert-warning alert-dismissible fade show">
-                    <h5 class="alert-heading"><i class="bi bi-unlock"></i> Free Paper</h5>
-                    <p class="mb-0">This question paper is free, so go ahead and download for free.</p>
+                    <h5 class="alert-heading"><i class="bi bi-shield-lock"></i> Secure PDF Access</h5>
+                    <p class="mb-0">This question paper is password-protected. After successful payment, the password will be sent instantly to your mobile phone via SMS.</p>
                 </div>
 
                 <div class="text-center mt-5 p-4 bg-light rounded">
@@ -50,7 +50,7 @@
                     <div class="d-grid gap-2 d-md-block">
                         <a href="{% url 'shop:buy_paper' paper.slug %}"
                             class="btn btn-primary btn-lg px-5 py-3">
-                            <i class="bi bi-lock-fill"></i> Download For Free
+                            <i class="bi bi-lock-fill"></i> Buy Now & Get Password via SMS
                         </a>
                         <a href="{% url 'shop:subject_list' paper.class_level.slug paper.term.slug %}"
                             class="btn btn-outline-secondary btn-lg mt-2 mt-md-0 ms-md-2">
