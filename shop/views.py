@@ -34,8 +34,9 @@ def term_list(request, class_slug):
     Displays the list of terms (Term 1, 2, 3) available for the selected Class.
     """
     class_level = get_object_or_404(Classes, slug=class_slug)
-    # Assuming 'terms' is a related name from the Term model back to Classes
-    terms = class_level.term_set.all() # Changed to use default related_name if 'terms' isn't explicitly defined
+    
+    # FIX APPLIED HERE: Used the correct related_name 'terms' defined in shop/models.py
+    terms = class_level.terms.all()
     
     context = {
         'class_level': class_level,
@@ -245,13 +246,13 @@ def paystack_webhook(request):
                 question_paper = payment.question_paper
                 
                 # Compose the SMS message
-                # BRAND NAME CHANGE: Updated from 'DarkSon Solutions'
+                # BRAND NAME: Insight Innovations
                 message = f"Your password for {question_paper.title} is: {question_paper.password}. Thank you for your purchase from Insight Innovations!" 
                 
                 # Arkesel API Details
                 arkesel_url = "https://sms.arkesel.com/api/v2/sms/send"
                 arkesel_payload = {
-                    # BRAND NAME CHANGE: Updated sender ID
+                    # SENDER ID: Insight Innovations
                     "sender": "Insight Innovations", 
                     "message": message,
                     "recipients": [payment.phone_number],
@@ -277,20 +278,13 @@ def paystack_webhook(request):
 # 6. Placeholder Views (Needed for base.html links)
 # ====================================================================
 
-# These are often linked in the base template but may not have complex logic yet
-# They should be defined in urls.py and may require basic template files.
-
-# NOTE: The provided code does not show user authentication views. 
-# We assume they exist elsewhere or will be implemented later. 
-
+# NOTE: These placeholder views are necessary because they are referenced in base.html
 def profile(request):
     """Placeholder for My Profile view."""
-    # Logic for displaying user purchases, history, etc.
     return render(request, 'shop/profile.html', {'page_title': 'My Profile'})
 
 def purchase_history(request):
     """Placeholder for Purchase History view."""
-    # Logic for listing previous payments/downloads
     return render(request, 'shop/purchase_history.html', {'page_title': 'Purchase History'})
 
 def login(request):
