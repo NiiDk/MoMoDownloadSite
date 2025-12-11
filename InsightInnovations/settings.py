@@ -5,17 +5,15 @@ Django settings for InsightInnovations project.
 """
 
 from pathlib import Path
-# No change needed here if 'python-decouple' is in requirements.txt:
-from decouple import config 
+from decouple import config # Ensures secure loading from .env
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ====================================================================
-# 🔒 SECURITY AND HOSTS (Load all secrets from .env)
+# 🔒 1. SECURITY AND HOSTS (Loaded from .env)
 # ====================================================================
 
-# SECURITY WARNING: Loaded from .env file for security.
 SECRET_KEY = config('SECRET_KEY') 
 
 # SECURITY WARNING: Do NOT deploy with DEBUG = True!
@@ -31,7 +29,7 @@ ALLOWED_HOSTS = [
 ]
 
 # ====================================================================
-# 🔑 CUSTOM SETTINGS: API KEYS AND CURRENCY (Loaded from .env)
+# 🔑 2. CUSTOM API KEYS AND CURRENCY (Loaded from .env)
 # ====================================================================
 
 # Paystack Keys (Loaded from .env file)
@@ -45,19 +43,26 @@ ARKESEL_API_KEY = config('ARKESEL_API_KEY')
 CURRENCY_CODE = 'GHS' 
 
 # ====================================================================
-# 📧 EMAIL CONFIGURATION (CRITICAL: Used by contact_us view)
+# 📧 3. EMAIL CONFIGURATION (CRITICAL FOR CONTACT FORM)
 # ====================================================================
 
+# 1. Use SMTP backend (Gmail requires this)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER') # Loaded from .env
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD') # Loaded from .env
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+
+# 2. Connection Details (Pulled directly from .env)
+EMAIL_HOST = config('EMAIL_HOST')                  # e.g., smtp.gmail.com
+EMAIL_PORT = config('EMAIL_PORT', cast=int)       # e.g., 587
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool) # e.g., True
+
+# 3. Credentials (Pulled from .env where App Password is set)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')        # e.g., darkosammy2@gmail.com
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD') # Your 16-character App Password
+
+# 4. Set the default sender
+DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER') 
 
 # ====================================================================
-# APPLICATION DEFINITION
+# 4. APPLICATION DEFINITION
 # ====================================================================
 
 INSTALLED_APPS = [
@@ -74,8 +79,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # 🔥 FIX 1: ADD WHITE NOISE HERE to serve static files in production (fixes Admin CSS)
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # For serving static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -89,7 +93,7 @@ ROOT_URLCONF = 'InsightInnovations.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Reverted the fix as it was incorrectly commented
+        'DIRS': [BASE_DIR / 'templates'], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -105,7 +109,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'InsightInnovations.wsgi.application'
 
 # ====================================================================
-# 💾 DATABASE
+# 5. DATABASE
 # ====================================================================
 
 DATABASES = {
@@ -116,7 +120,7 @@ DATABASES = {
 }
 
 # ====================================================================
-# PASSWORD VALIDATION
+# 6. PASSWORD VALIDATION
 # ====================================================================
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -141,7 +145,7 @@ USE_I18N = True
 USE_TZ = True
 
 # ====================================================================
-# 🖥️ STATIC FILES (CRITICAL FOR DEPLOYMENT)
+# 7. STATIC FILES (CRITICAL FOR DEPLOYMENT)
 # ====================================================================
 
 # Base URL for static assets
@@ -150,7 +154,7 @@ STATIC_URL = 'static/'
 # Directory where static files will be collected by 'collectstatic'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# 🔥 FIX 2: TELL WHITENOISE HOW TO HANDLE STATIC FILES IN PRODUCTION
+# WhiteNoise storage configuration
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
