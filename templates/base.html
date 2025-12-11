@@ -28,9 +28,9 @@
 <body>
     
     <div class="offcanvas offcanvas-start bg-dark text-white" 
-         tabindex="-1" 
-         id="siteDrawer" 
-         aria-labelledby="siteDrawerLabel">
+          tabindex="-1" 
+          id="siteDrawer" 
+          aria-labelledby="siteDrawerLabel">
 
         <div class="offcanvas-header border-bottom border-secondary">
             <h5 class="offcanvas-title fw-bold" id="siteDrawerLabel">
@@ -53,8 +53,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'shop:buy_paper' %}" 
-                           class="nav-link text-white {% if request.resolver_match.url_name == 'buy_paper' %}active fw-bold bg-primary bg-opacity-25 rounded{% endif %}">
+                        <a href="{% url 'shop:class_list' %}" 
+                           class="nav-link text-white">
                             <i class="fas fa-shopping-cart me-2"></i> Buy Papers
                         </a>
                     </li>
@@ -131,7 +131,7 @@
                         <a class="nav-link" href="{% url 'shop:class_list' %}">Classes</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'shop:buy_paper' %}">Buy Papers</a>
+                        <a class="nav-link" href="{% url 'shop:class_list' %}">Buy Papers</a>
                     </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item">
