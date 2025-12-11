@@ -21,18 +21,18 @@
                         <i class="bi bi-phone-vibrate"></i> The secure download password will be delivered instantly via SMS to the mobile number provided below.
                     </div>
 
-                    <form action="{% url 'shop:initiate_payment' paper.slug %}" method="POST" class="mt-4">
+                    <form action="{% url 'shop:buy_paper' paper.slug %}" method="POST" class="mt-4">
                         {% csrf_token %}
 
                         <div class="mb-4">
                             <label for="id_email" class="form-label fw-bold">
                                 <i class="bi bi-envelope"></i> Email Address
                             </label>
-                            <input type="email" 
-                                   name="email" 
-                                   class="form-control form-control-lg" 
-                                   id="id_email" 
-                                   placeholder="you@example.com" 
+                            <input type="email"
+                                   name="email"
+                                   class="form-control form-control-lg"
+                                   id="id_email"
+                                   placeholder="you@example.com"
                                    required>
                             <div class="form-text">Receipt and updates will be sent here</div>
                         </div>
@@ -41,12 +41,12 @@
                             <label for="id_phone_number" class="form-label fw-bold">
                                 <i class="bi bi-phone"></i> Mobile Money Number
                             </label>
-                            <input type="tel" 
-                                   name="phone_number" 
-                                   class="form-control form-control-lg" 
-                                   id="id_phone_number" 
-                                   placeholder="024XXXXXXX or 054XXXXXXX" 
-                                   maxlength="20" 
+                            <input type="tel"
+                                   name="phone_number"
+                                   class="form-control form-control-lg"
+                                   id="id_phone_number"
+                                   placeholder="024XXXXXXX or 054XXXXXXX"
+                                   maxlength="20"
                                    required>
                             <div class="form-text">Enter the number for SMS password delivery</div>
                         </div>
@@ -69,8 +69,8 @@
                             <i class="bi bi-lock-fill"></i> Proceed to Pay GHS {{ paper.price }}
                         </button>
                         
-                        <a href="{% url 'shop:paper_detail' paper.class_level.slug paper.term.slug paper.subject.slug paper.slug %}" 
-                           class="btn btn-outline-secondary w-100 mt-3">
+                        <a href="{% url 'shop:paper_detail' paper.class_level.slug paper.term.slug paper.subject.slug paper.slug %}"
+                            class="btn btn-outline-secondary w-100 mt-3">
                             <i class="bi bi-arrow-left"></i> Back to Paper Details
                         </a>
                     </form>
