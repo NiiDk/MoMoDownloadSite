@@ -6,13 +6,13 @@
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <h1 class="mb-4 text-center text-primary"><i class="fas fa-person-lines-fill"></i> Contact Us</h1>
+            <h1 class="mb-4 text-center text-primary"><i class="fas fa-address-book"></i> Contact Us</h1>
             <p class="lead text-center mb-5">We are here to help! Reach out for any questions, suggestions, or technical support.</p>
             
             {% if success %}
                 <div class="alert alert-success text-center p-4">
                     <h4 class="alert-heading">Thank You, {{ name }}!</h4>
-                    <p class="mb-0">Your message has been received. We will get back to you as soon as possible.</p>
+                    <p class="mb-0">Your message has been received. We have sent a copy to your email address. We will get back to you as soon as possible.</p>
                     <a href="{% url 'shop:class_list' %}" class="btn btn-outline-success mt-3">Continue Browsing</a>
                 </div>
             {% else %}
