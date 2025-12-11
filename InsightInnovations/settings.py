@@ -1,7 +1,7 @@
-# DarkSonSolutions/settings.py
+# InsightInnovations/settings.py
 
 """
-Django settings for DarkSonSolutions project.
+Django settings for InsightInnovations project.
 """
 
 from pathlib import Path
@@ -26,7 +26,7 @@ ALLOWED_HOSTS = [
     'localhost', 
     config('NGROK_TUNNEL', default=''), 
     '.render.com', 
-    'DarkSonSolutions.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
+    'InsightInnovations.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
     config('RENDER_EXTERNAL_HOSTNAME', default=''),
 ]
 
