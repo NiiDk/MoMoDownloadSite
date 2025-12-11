@@ -1,4 +1,4 @@
-# DarkSonSolutions/urls.py
+# InsightInnovations/urls.py
 
 from django.contrib import admin
 from django.urls import path, include # 'include' is necessary for this structure
