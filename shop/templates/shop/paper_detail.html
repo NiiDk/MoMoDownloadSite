@@ -4,65 +4,65 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card shadow border-0">
-            <div class="card-header bg-info text-white">
-                <h4 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Question Paper Details</h4>
-            </div>
-            <div class="card-body p-4">
-                <h2 class="card-title text-dark mb-4">{{ paper.title }}</h2>
-                
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="card bg-light mb-3">
-                            <div class="card-body">
-                                <h5 class="card-subtitle mb-2 text-muted">Class / Grade</h5>
-                                <p class="card-text fs-5 fw-bold text-primary">{{ paper.class_level.name }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card bg-light mb-3">
-                            <div class="card-body">
-                                <h5 class="card-subtitle mb-2 text-muted">Term</h5>
-                                <p class="card-text fs-5 fw-bold text-success">{{ paper.term.name }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card bg-light mb-4">
-                    <div class="card-body">
-                        <h5 class="card-subtitle mb-2 text-muted">Subject</h5>
-                        <p class="card-text fs-5 fw-bold text-dark">{{ paper.subject.name }}</p>
-                    </div>
-                </div>
-                
-                <div class="alert alert-warning alert-dismissible fade show">
-                    <h5 class="alert-heading"><i class="bi bi-shield-lock"></i> Secure PDF Access</h5>
-                    <p class="mb-0">This question paper is password-protected. After successful payment, the password will be sent instantly to your mobile phone via SMS.</p>
-                </div>
+    <div class="col-lg-8">
+        <div class="card shadow border-0">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Question Paper Details</h4>
+            </div>
+            <div class="card-body p-4">
+                <h2 class="card-title text-dark mb-4">{{ paper.title }}</h2>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h5 class="card-subtitle mb-2 text-muted">Class / Grade</h5>
+                                <p class="card-text fs-5 fw-bold text-primary">{{ paper.class_level.name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h5 class="card-subtitle mb-2 text-muted">Term</h5>
+                                <p class="card-text fs-5 fw-bold text-success">{{ paper.term.name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h5 class="card-subtitle mb-2 text-muted">Subject</h5>
+                        <p class="card-text fs-5 fw-bold text-dark">{{ paper.subject.name }}</p>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning alert-dismissible fade show">
+                    <h5 class="alert-heading"><i class="bi bi-shield-lock"></i> Secure PDF Access</h5>
+                    <p class="mb-0">This question paper is password-protected. After successful payment, the password will be sent instantly to your mobile phone via SMS.</p>
+                </div>
 
-                <div class="text-center mt-5 p-4 bg-light rounded">
-                    <h3 class="text-success mb-3">
-                        Price: <span class="display-6">{{ currency_code }} {{ paper.price }}</span>
-                    </h3>
-                    <div class="d-grid gap-2 d-md-block">
-                        <a href="{% url 'shop:initiate_payment' paper.slug %}" 
-                           class="btn btn-primary btn-lg px-5 py-3">
-                            <i class="bi bi-lock-fill"></i> Buy Now & Get Password via SMS
-                        </a>
-                        <a href="{% url 'shop:subject_list' paper.class_level.slug paper.term.slug %}" 
-                           class="btn btn-outline-secondary btn-lg mt-2 mt-md-0 ms-md-2">
-                            <i class="bi bi-arrow-left"></i> Back to Subjects
-                        </a>
-                    </div>
-                    <p class="text-muted small mt-3">
-                        You'll be redirected to Paystack for secure Mobile Money payment
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
+                <div class="text-center mt-5 p-4 bg-light rounded">
+                    <h3 class="text-success mb-3">
+                        Price: <span class="display-6">{{ currency_code }} {{ paper.price }}</span>
+                    </h3>
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{% url 'shop:buy_paper' paper.slug %}" 
+                           class="btn btn-primary btn-lg px-5 py-3">
+                            <i class="bi bi-lock-fill"></i> Buy Now & Get Password via SMS
+                        </a>
+                        <a href="{% url 'shop:subject_list' paper.class_level.slug paper.term.slug %}" 
+                           class="btn btn-outline-secondary btn-lg mt-2 mt-md-0 ms-md-2">
+                            <i class="bi bi-arrow-left"></i> Back to Subjects
+                        </a>
+                    </div>
+                    <p class="text-muted small mt-3">
+                        You'll be redirected to Paystack for secure Mobile Money payment
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
