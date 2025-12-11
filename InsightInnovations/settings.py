@@ -45,6 +45,18 @@ ARKESEL_API_KEY = config('ARKESEL_API_KEY')
 CURRENCY_CODE = 'GHS' 
 
 # ====================================================================
+# 📧 EMAIL CONFIGURATION (CRITICAL: Used by contact_us view)
+# ====================================================================
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER') # Loaded from .env
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD') # Loaded from .env
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+
+# ====================================================================
 # APPLICATION DEFINITION
 # ====================================================================
 
@@ -77,7 +89,7 @@ ROOT_URLCONF = 'InsightInnovations.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # 🔥 CRITICAL FIX: Changed from [BASE_DIR / 'templates'] to empty list
+        'DIRS': [BASE_DIR / 'templates'], # Reverted the fix as it was incorrectly commented
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
