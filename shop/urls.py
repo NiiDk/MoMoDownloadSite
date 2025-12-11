@@ -8,16 +8,19 @@ urlpatterns = [
     
     # 1. TRANSACTION / DOWNLOAD VIEWS
     
-    # 1.1. Maps the required name 'buy_paper' to the new conditional view
+    # 1.1. Maps the required name 'buy_paper' to the conditional view
     path('buy/<slug:paper_slug>/', views.initiate_payment_or_download, name='buy_paper'),
     
-    # 1.2. NEW: The path for the actual free file delivery.
-    path('download/<slug:paper_slug>/', views.download_paper, name='download_paper'),
+    # 1.2. NEW: The landing page for free downloads (used by paper_detail view)
+    path('free-download/<slug:paper_slug>/', views.free_download_landing, name='download_page'),
     
-    # 1.3. /payment/callback/ - Handles user redirection from Paystack
+    # 1.3. NEW: The path for the actual file delivery (used by free_download_landing view)
+    path('download-file/<slug:paper_slug>/', views.download_file, name='download_file'),
+    
+    # 1.4. /payment/callback/ - Handles user redirection from Paystack
     path('payment/callback/', views.payment_callback, name='payment_callback'),
     
-    # 1.4. /webhooks/paystack/ - Receives background confirmation from Paystack
+    # 1.5. /webhooks/paystack/ - Receives background confirmation from Paystack
     path('webhooks/paystack/', views.paystack_webhook, name='paystack_webhook'),
     
     # 2. PLACEHOLDER VIEWS (Hardcoded names that must also come before slugs)

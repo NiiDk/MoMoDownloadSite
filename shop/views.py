@@ -6,17 +6,17 @@ from django import forms
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponse, FileResponse, Http404 # IMPORTANT: Added FileResponse, Http404
+from django.http import JsonResponse, HttpResponse, FileResponse, Http404 
 from django.urls import reverse
 from django.db import models
 from .models import Classes, Term, Subject, QuestionPaper, Payment
-import os # IMPORTANT: Added os for file path handling
+import os 
 
 # ====================================================================
-# 1. HIERARCHICAL LIST VIEWS (Navigation) - (UNCHANGED)
+# 1. HIERARCHICAL LIST VIEWS (Navigation)
 # ====================================================================
 
-# 1.1. Homepage: List all Classes/Grades
+# 1.1. Homepage: List all Classes/Grades (UNCHANGED)
 def class_list(request):
     """
     Displays the top-level list of all available Classes (e.g., JHS 1).
@@ -30,7 +30,7 @@ def class_list(request):
     }
     return render(request, 'shop/class_list.html', context)
     
-# 1.2. Second Level: List all Terms for a Class
+# 1.2. Second Level: List all Terms for a Class (UNCHANGED)
 def term_list(request, class_slug):
     """
     Displays the list of terms (Term 1, 2, 3) available for the selected Class.
@@ -47,7 +47,7 @@ def term_list(request, class_slug):
     }
     return render(request, 'shop/term_list.html', context)
 
-# 1.3. Third Level: List all Subjects for a Term
+# 1.3. Third Level: List all Subjects for a Term (UNCHANGED)
 def subject_list(request, class_slug, term_slug):
     """
     Displays the list of subjects available for the selected Class and Term.
@@ -77,10 +77,11 @@ def subject_list(request, class_slug, term_slug):
     }
     return render(request, 'shop/subject_list.html', context)
     
-# 1.4. Final Level: Paper Detail/Buy Page
+# 1.4. Final Level: Paper Detail/Buy Page (REVISED FOR DYNAMIC BUTTON)
 def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
     """
     Displays the specific paper that the user can purchase (the product page).
+    Adds dynamic button text and URL based on the 'is_paid' status.
     """
     # Fetch the specific Question Paper based on all slugs
     paper = get_object_or_404(QuestionPaper, 
@@ -90,10 +91,23 @@ def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
         slug=paper_slug
     )
 
+    # === DYNAMIC BUTTON LOGIC (NEW) ===
+    if paper.is_paid:
+        # If paid, use the payment initiation URL
+        button_url = reverse('shop:buy_paper', args=[paper.slug])
+        button_text = "Buy Now & Get Password via SMS"
+    else:
+        # If free, use the new dedicated free download landing page URL
+        button_url = reverse('shop:download_page', args=[paper.slug])
+        button_text = "Free Download"
+    # ============================
+    
     context = {
         'paper': paper,
         'page_title': paper.title,
-        'currency_code': settings.CURRENCY_CODE
+        'currency_code': settings.CURRENCY_CODE,
+        'button_url': button_url,      # Passed to paper_detail.html
+        'button_text': button_text     # Passed to paper_detail.html
     }
     return render(request, 'shop/paper_detail.html', context)
 
@@ -108,7 +122,6 @@ class PurchaseForm(forms.Form):
         label='Email Address',
         widget=forms.EmailInput(attrs={'class': 'form-control'})
     )
-    # Note: Paystack mobile money usually requires the format to include the country code (e.g., +23324xxxxxxx)
     phone_number = forms.CharField(
         label='Mobile Money Number (e.g., 024xxxxxxx)',
         max_length=20,
@@ -120,11 +133,10 @@ class PurchaseForm(forms.Form):
 # 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION (REVISED)
 # ====================================================================
 
-# View is renamed to reflect its conditional logic
 def initiate_payment_or_download(request, paper_slug):
     """
     Handles 'shop:buy_paper'. Checks the 'is_paid' flag:
-    - If False (free), redirects to free download.
+    - If False (free), redirects to the new free download landing page.
     - If True (paid), proceeds with Paystack payment initiation form.
     """
     try:
@@ -132,10 +144,11 @@ def initiate_payment_or_download(request, paper_slug):
     except Exception:
         return render(request, 'shop/error.html', {'message': 'The requested item was not found.'})
 
-    # === NEW CONDITIONAL LOGIC ===
+    # === CONDITIONAL LOGIC ===
     if not paper.is_paid:
-        # If the paper is FREE (is_paid is unchecked/False), redirect to instant download
-        return redirect('shop:download_paper', paper_slug=paper.slug)
+        # If the paper is FREE, redirect to the new landing page
+        # This prevents the user from seeing the payment form momentarily
+        return redirect('shop:download_page', paper_slug=paper.slug)
     
     # === ORIGINAL PAID LOGIC (IF is_paid is checked/True) ===
     if request.method == 'POST':
@@ -152,7 +165,7 @@ def initiate_payment_or_download(request, paper_slug):
                 phone_number=phone_number
             )
             
-            # 2. Paystack API Call Setup
+            # 2. Paystack API Call Setup (UNCHANGED)
             url = "https://api.paystack.co/transaction/initialize"
             headers = {
                 "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
@@ -168,15 +181,13 @@ def initiate_payment_or_download(request, paper_slug):
                 "channels": ["mobile_money"],
             }
             
-            # 3. Make the request to Paystack
+            # 3. Make the request to Paystack (UNCHANGED)
             response = requests.post(url, headers=headers, data=json.dumps(data))
             response_data = response.json()
 
             if response.status_code == 200 and response_data.get('status'):
-                # 4. Success: Redirect user to Paystack payment gateway
                 return redirect(response_data['data']['authorization_url'])
             else:
-                # 5. Failure: Show a generic error page
                 print(f"Paystack Error: {response_data}") 
                 return render(request, 'shop/error.html', {'message': response_data.get('message', 'Could not initiate payment.')})
     
@@ -188,16 +199,38 @@ def initiate_payment_or_download(request, paper_slug):
 
 
 # ====================================================================
-# 4. FREE DOWNLOAD VIEW (NEW)
+# 4. FREE DOWNLOAD LANDING PAGE (NEW VIEW)
 # ====================================================================
 
-def download_paper(request, paper_slug):
+def free_download_landing(request, paper_slug):
     """
-    Serves the file directly to the user's browser.
+    Renders the page that says "Free Download" and gives the final file link.
+    This view resolves the 'shop:download_page' URL.
     """
     paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     
-    # Optional check: Ensure paid papers cannot be accessed directly
+    # URL to the actual file serving view
+    file_download_url = reverse('shop:download_file', args=[paper.slug])
+    
+    context = {
+        'paper': paper,
+        'file_download_url': file_download_url
+    }
+    return render(request, 'shop/free_download_landing.html', context)
+
+
+# ====================================================================
+# 5. ACTUAL FILE DOWNLOAD VIEW (RENAMED from download_paper to download_file)
+# ====================================================================
+
+def download_file(request, paper_slug):
+    """
+    Serves the file directly to the user's browser.
+    This view resolves the 'shop:download_file' URL.
+    """
+    paper = get_object_or_404(QuestionPaper, slug=paper_slug)
+    
+    # Optional check: Block paid papers if someone finds this direct link
     if paper.is_paid:
         raise Http404("This file requires payment.")
 
@@ -224,7 +257,7 @@ def download_paper(request, paper_slug):
 
 
 # ====================================================================
-# 5. PAYMENT CALLBACK VIEW (UNCHANGED)
+# 6. PAYMENT CALLBACK VIEW (UNCHANGED)
 # ====================================================================
 
 def payment_callback(request):
@@ -233,8 +266,6 @@ def payment_callback(request):
     """
     reference = request.GET.get('reference')
     
-    # Optional: You can trigger payment verification here if you don't rely solely on the webhook
-    
     context = {
         'reference': reference,
     }
@@ -242,7 +273,7 @@ def payment_callback(request):
 
 
 # ====================================================================
-# 6. PAYSTACK WEBHOOK HANDLER (UNCHANGED)
+# 7. PAYSTACK WEBHOOK HANDLER (UNCHANGED)
 # ====================================================================
 
 @csrf_exempt
@@ -255,8 +286,6 @@ def paystack_webhook(request):
         return HttpResponse(status=400)
 
     try:
-        # NOTE: For production, you MUST verify the signature (using request.headers.get('x-paystack-signature'))
-        
         payload = json.loads(request.body)
     except json.JSONDecodeError:
         return HttpResponse(status=400)
@@ -289,13 +318,11 @@ def paystack_webhook(request):
                 question_paper = payment.question_paper
                 
                 # Compose the SMS message
-                # BRAND NAME: Insight Innovations
                 message = f"Your password for {question_paper.title} is: {question_paper.password}. Thank you for your purchase from Insight Innovations!" 
                 
                 # Arkesel API Details
                 arkesel_url = "https://sms.arkesel.com/api/v2/sms/send"
                 arkesel_payload = {
-                    # SENDER ID: Insight Innovations
                     "sender": "Insight Innovations", 
                     "message": message,
                     "recipients": [payment.phone_number],
@@ -305,23 +332,19 @@ def paystack_webhook(request):
                 # Send the SMS via Arkesel
                 requests.post(arkesel_url, json=arkesel_payload)
                 
-                # Success Response for Paystack (MUST be 200 OK)
                 return JsonResponse({'status': 'success', 'message': 'Payment verified and password sent'}, status=200)
             
-            # If payment was already verified (webhook sent twice)
             return JsonResponse({'status': 'success', 'message': 'Payment already verified'}, status=200)
 
-        # If verification fails 
         return JsonResponse({'status': 'error', 'message': 'Payment verification failed'}, status=400)
 
-    # Respond successfully to all other Paystack events
     return JsonResponse({'status': 'success', 'message': 'Webhook received, but not a charge success event'}, status=200)
 
+
 # ====================================================================
-# 7. Placeholder Views (Needed for base.html links) - (UNCHANGED)
+# 8. Placeholder Views (UNCHANGED)
 # ====================================================================
 
-# NOTE: These placeholder views are necessary because they are referenced in base.html
 def profile(request):
     """Placeholder for My Profile view."""
     return render(request, 'shop/profile.html', {'page_title': 'My Profile'})
@@ -332,11 +355,10 @@ def purchase_history(request):
 
 def login(request):
     """Placeholder for Login view."""
-    return redirect('admin:login') # Example: Redirect to Django Admin login for simplicity
+    return redirect('admin:login')
 
 def logout(request):
     """Placeholder for Logout view."""
-    # You will use Django's built-in logout function here
     return redirect('shop:class_list')
 
 def register(request):

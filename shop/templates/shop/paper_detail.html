@@ -38,28 +38,42 @@
                     </div>
                 </div>
                 
-                <div class="alert alert-warning alert-dismissible fade show">
-                    <h5 class="alert-heading"><i class="bi bi-shield-lock"></i> Secure PDF Access</h5>
-                    <p class="mb-0">This question paper is password-protected. After successful payment, the password will be sent instantly to your mobile phone via SMS.</p>
-                </div>
+                {% if paper.is_paid %}
+                    <div class="alert alert-warning alert-dismissible fade show">
+                        <h5 class="alert-heading"><i class="bi bi-shield-lock"></i> Secure PDF Access</h5>
+                        <p class="mb-0">This question paper is password-protected. After successful payment, the password will be sent instantly to your mobile phone via SMS.</p>
+                    </div>
+                {% else %}
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <h5 class="alert-heading"><i class="bi bi-gift"></i> Free Download</h5>
+                        <p class="mb-0">This paper is a free resource. Click the button below to download instantly without payment.</p>
+                    </div>
+                {% endif %}
+
 
                 <div class="text-center mt-5 p-4 bg-light rounded">
-                    <h3 class="text-success mb-3">
-                        Price: <span class="display-6">{{ currency_code }} {{ paper.price }}</span>
-                    </h3>
+                    {% if paper.is_paid %}
+                        <h3 class="text-success mb-3">
+                            Price: <span class="display-6">{{ currency_code }} {{ paper.price }}</span>
+                        </h3>
+                    {% endif %}
+                    
                     <div class="d-grid gap-2 d-md-block">
-                        <a href="{% url 'shop:buy_paper' paper.slug %}"
+                        <a href="{{ button_url }}"
                             class="btn btn-primary btn-lg px-5 py-3">
-                            <i class="bi bi-lock-fill"></i> Buy Now & Get Password via SMS
+                            <i class="bi bi-lock-fill"></i> {{ button_text }}
                         </a>
                         <a href="{% url 'shop:subject_list' paper.class_level.slug paper.term.slug %}"
                             class="btn btn-outline-secondary btn-lg mt-2 mt-md-0 ms-md-2">
                             <i class="bi bi-arrow-left"></i> Back to Subjects
                         </a>
                     </div>
-                    <p class="text-muted small mt-3">
-                        You'll be redirected to Paystack for secure Mobile Money payment
-                    </p>
+                    
+                    {% if paper.is_paid %}
+                        <p class="text-muted small mt-3">
+                            You'll be redirected to Paystack for secure Mobile Money payment
+                        </p>
+                    {% endif %}
                 </div>
             </div>
         </div>
