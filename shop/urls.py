@@ -6,15 +6,18 @@ app_name = 'shop'
 
 urlpatterns = [
     
-    # 1. TRANSACTION VIEWS (MUST COME FIRST TO AVOID CLASHES)
+    # 1. TRANSACTION / DOWNLOAD VIEWS
     
-    # 1.1. Maps the required name 'buy_paper' to the view that needs the paper_slug
-    path('buy/<slug:paper_slug>/', views.initiate_payment, name='buy_paper'),
+    # 1.1. Maps the required name 'buy_paper' to the new conditional view
+    path('buy/<slug:paper_slug>/', views.initiate_payment_or_download, name='buy_paper'),
     
-    # 1.2. /payment/callback/ - Handles user redirection from Paystack
+    # 1.2. NEW: The path for the actual free file delivery.
+    path('download/<slug:paper_slug>/', views.download_paper, name='download_paper'),
+    
+    # 1.3. /payment/callback/ - Handles user redirection from Paystack
     path('payment/callback/', views.payment_callback, name='payment_callback'),
     
-    # 1.3. /webhooks/paystack/ - Receives background confirmation from Paystack
+    # 1.4. /webhooks/paystack/ - Receives background confirmation from Paystack
     path('webhooks/paystack/', views.paystack_webhook, name='paystack_webhook'),
     
     # 2. PLACEHOLDER VIEWS (Hardcoded names that must also come before slugs)

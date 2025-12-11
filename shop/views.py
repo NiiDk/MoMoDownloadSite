@@ -1,17 +1,19 @@
+# shop/views.py
+
 import json
 import requests
 from django import forms
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, FileResponse, Http404 # IMPORTANT: Added FileResponse, Http404
 from django.urls import reverse
 from django.db import models
 from .models import Classes, Term, Subject, QuestionPaper, Payment
-# Assuming you have models for authentication like 'UserProfile' if needed later
+import os # IMPORTANT: Added os for file path handling
 
 # ====================================================================
-# 1. NEW HIERARCHICAL LIST VIEWS (Navigation)
+# 1. HIERARCHICAL LIST VIEWS (Navigation) - (UNCHANGED)
 # ====================================================================
 
 # 1.1. Homepage: List all Classes/Grades
@@ -97,7 +99,7 @@ def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
 
 
 # ====================================================================
-# 2. FORM DEFINITION 
+# 2. FORM DEFINITION (UNCHANGED)
 # ====================================================================
 
 class PurchaseForm(forms.Form):
@@ -115,21 +117,27 @@ class PurchaseForm(forms.Form):
 
 
 # ====================================================================
-# 3. PAYMENT INITIATION VIEW (MANDATORY: Resolves 'shop:buy_paper')
+# 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION (REVISED)
 # ====================================================================
 
-def initiate_payment(request, paper_slug):
+# View is renamed to reflect its conditional logic
+def initiate_payment_or_download(request, paper_slug):
     """
-    Handles displaying the form and initiating the payment with Paystack.
-    This view resolves the 'shop:buy_paper' URL reverse.
+    Handles 'shop:buy_paper'. Checks the 'is_paid' flag:
+    - If False (free), redirects to free download.
+    - If True (paid), proceeds with Paystack payment initiation form.
     """
     try:
-        # 1. Get the Question Paper object using the slug
         paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     except Exception:
-        # Handles cases where the slug is valid but the object doesn't exist
         return render(request, 'shop/error.html', {'message': 'The requested item was not found.'})
 
+    # === NEW CONDITIONAL LOGIC ===
+    if not paper.is_paid:
+        # If the paper is FREE (is_paid is unchecked/False), redirect to instant download
+        return redirect('shop:download_paper', paper_slug=paper.slug)
+    
+    # === ORIGINAL PAID LOGIC (IF is_paid is checked/True) ===
     if request.method == 'POST':
         form = PurchaseForm(request.POST)
 
@@ -137,14 +145,14 @@ def initiate_payment(request, paper_slug):
             email = form.cleaned_data['email']
             phone_number = form.cleaned_data['phone_number']
 
-            # 2. Create the local Payment record (unverified)
+            # 1. Create the local Payment record (unverified)
             payment = Payment.objects.create(
                 question_paper=paper,
                 email=email,
                 phone_number=phone_number
             )
             
-            # 3. Paystack API Call Setup
+            # 2. Paystack API Call Setup
             url = "https://api.paystack.co/transaction/initialize"
             headers = {
                 "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
@@ -156,24 +164,23 @@ def initiate_payment(request, paper_slug):
                 "amount": payment.amount_in_kobo(),
                 "currency": settings.CURRENCY_CODE,
                 "reference": str(payment.ref),
-                # IMPORTANT: Use request.scheme for HTTPS on production
                 "callback_url": f"{request.scheme}://{request.get_host()}{reverse('shop:payment_callback')}",
                 "channels": ["mobile_money"],
             }
             
-            # 4. Make the request to Paystack
+            # 3. Make the request to Paystack
             response = requests.post(url, headers=headers, data=json.dumps(data))
             response_data = response.json()
 
             if response.status_code == 200 and response_data.get('status'):
-                # 5. Success: Redirect user to Paystack payment gateway
+                # 4. Success: Redirect user to Paystack payment gateway
                 return redirect(response_data['data']['authorization_url'])
             else:
-                # 6. Failure: Show a generic error page with the message from Paystack
-                print(f"Paystack Error: {response_data}") # Log error for debugging
+                # 5. Failure: Show a generic error page
+                print(f"Paystack Error: {response_data}") 
                 return render(request, 'shop/error.html', {'message': response_data.get('message', 'Could not initiate payment.')})
     
-    # 7. Initial GET request: Display the form
+    # Initial GET request for PAID papers: Display the form
     else:
         form = PurchaseForm()
 
@@ -181,7 +188,43 @@ def initiate_payment(request, paper_slug):
 
 
 # ====================================================================
-# 4. PAYMENT CALLBACK VIEW
+# 4. FREE DOWNLOAD VIEW (NEW)
+# ====================================================================
+
+def download_paper(request, paper_slug):
+    """
+    Serves the file directly to the user's browser.
+    """
+    paper = get_object_or_404(QuestionPaper, slug=paper_slug)
+    
+    # Optional check: Ensure paid papers cannot be accessed directly
+    if paper.is_paid:
+        raise Http404("This file requires payment.")
+
+    if not paper.pdf_file:
+        raise Http404("This paper does not have an associated file for download.")
+
+    try:
+        # Get the absolute path to the file
+        file_path = paper.pdf_file.path 
+        file_handle = open(file_path, 'rb')
+        
+        # FileResponse handles streaming the file content efficiently
+        response = FileResponse(
+            file_handle, 
+            as_attachment=True, 
+            filename=os.path.basename(file_path)
+        )
+        return response
+    
+    except FileNotFoundError:
+        raise Http404("The requested paper file was not found on the server.")
+    except Exception as e:
+        return render(request, 'shop/error.html', {'message': f"An unexpected error occurred during download: {e}"})
+
+
+# ====================================================================
+# 5. PAYMENT CALLBACK VIEW (UNCHANGED)
 # ====================================================================
 
 def payment_callback(request):
@@ -199,7 +242,7 @@ def payment_callback(request):
 
 
 # ====================================================================
-# 5. PAYSTACK WEBHOOK HANDLER
+# 6. PAYSTACK WEBHOOK HANDLER (UNCHANGED)
 # ====================================================================
 
 @csrf_exempt
@@ -275,7 +318,7 @@ def paystack_webhook(request):
     return JsonResponse({'status': 'success', 'message': 'Webhook received, but not a charge success event'}, status=200)
 
 # ====================================================================
-# 6. Placeholder Views (Needed for base.html links)
+# 7. Placeholder Views (Needed for base.html links) - (UNCHANGED)
 # ====================================================================
 
 # NOTE: These placeholder views are necessary because they are referenced in base.html
