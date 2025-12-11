@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse, FileResponse, Http404 
 from django.urls import reverse
 from django.db import models
+from django.core.mail import send_mail # <--- NEW IMPORT
 from .models import Classes, Term, Subject, QuestionPaper, Payment
 import os 
 
@@ -387,32 +388,78 @@ def register(request):
 
 def contact_us(request):
     """
-    Handles the contact form display and submission.
+    Handles the contact form display and submission, and sends the message via email.
     """
+    # === UPDATED IMPORT: send_mail is now imported at the top of the file ===
     if request.method == 'POST':
         form = ContactForm(request.POST)
         if form.is_valid():
-            # In a production app, you would send the email here using Django's send_mail function.
+            name = form.cleaned_data['name']
+            visitor_email = form.cleaned_data['email']
+            subject = form.cleaned_data['subject']
+            message = form.cleaned_data['message']
             
-            context = {
-                'page_title': 'Message Sent',
-                'success': True,
-                'name': form.cleaned_data['name']
-            }
-            return render(request, 'shop/contact_us.html', context)
+            # 1. Compose the Email Content
+            full_subject = f"[CONTACT FORM] {subject} - From: {name}"
+            email_body = f"Message received from the website contact form.\n\n"
+            email_body += f"Name: {name}\n"
+            email_body += f"Email: {visitor_email}\n"
+            email_body += f"Subject: {subject}\n\n"
+            email_body += f"--- MESSAGE CONTENT ---\n{message}\n---------------------\n"
+            
+            try:
+                # 2. Send Email to the Admin (Your Account)
+                send_mail(
+                    full_subject,
+                    email_body,
+                    settings.DEFAULT_FROM_EMAIL, # Sender (configured in settings.py)
+                    ['darkosammy2@gmail.com'], # Admin Recipient (Your Email)
+                    fail_silently=False,
+                )
+                
+                # Optional: Send Confirmation to the Visitor (Good practice)
+                send_mail(
+                    f"Confirmation: We received your message",
+                    f"Dear {name},\n\nThank you for reaching out to us. We have received your message regarding: '{subject}'. We will respond as soon as possible.\n\n---\nInsight Innovations Team",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [visitor_email],
+                    fail_silently=True,
+                )
+                
+                context = {
+                    'page_title': 'Message Sent',
+                    'success': True,
+                    'name': name
+                }
+                return render(request, 'shop/contact_us.html', context)
+
+            except Exception as e:
+                # Handle email sending errors (e.g., incorrect settings)
+                print(f"Error sending contact email: {e}")
+                # Re-display the form with an error message
+                context = {
+                    'page_title': 'Contact Us - Error',
+                    'form': form,
+                    'success': False,
+                    'email_error': 'There was a server error sending your message. Please try again or call us.',
+                    'phone': '+233542232515', 
+                    'email': 'darkosammy2@gmail.com',
+                    'location': 'Accra, Ghana'
+                }
+                return render(request, 'shop/contact_us.html', context)
     
+    # Initial GET request or non-valid form submission
     else:
         form = ContactForm()
     
-    # === UPDATED CONTACT DETAILS IN CONTEXT ===
+    # Context for displaying the form
     context = {
         'page_title': 'Contact Us',
         'form': form,
         'success': False,
-        
         # Static Contact Details to display on the page
         'phone': '+233542232515', 
-        'email': 'darkosammy2@gmail.com', # <--- UPDATED
+        'email': 'darkosammy2@gmail.com',
         'location': 'Accra, Ghana'
     }
     return render(request, 'shop/contact_us.html', context)
