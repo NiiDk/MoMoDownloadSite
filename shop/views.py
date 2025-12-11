@@ -1,5 +1,3 @@
-# shop/views.py
-
 import json
 import requests
 from django import forms
@@ -7,9 +5,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
-from .models import Classes, Term, Subject, QuestionPaper, Payment # CRITICAL: Import new models
-from django.urls import reverse # For reversing URLs with slugs
+from django.urls import reverse
 from django.db import models
+from .models import Classes, Term, Subject, QuestionPaper, Payment
+# Assuming you have models for authentication like 'UserProfile' if needed later
 
 # ====================================================================
 # 1. NEW HIERARCHICAL LIST VIEWS (Navigation)
@@ -19,7 +18,7 @@ from django.db import models
 def class_list(request):
     """
     Displays the top-level list of all available Classes (e.g., JHS 1).
-    This is the new homepage.
+    This is the new homepage, aliased by the root URL '/'.
     """
     classes = Classes.objects.all()
     context = {
@@ -27,7 +26,6 @@ def class_list(request):
         'page_title': 'Select Your Class/Grade',
         'is_homepage': True
     }
-    # We will use a dedicated template for the classes list
     return render(request, 'shop/class_list.html', context)
     
 # 1.2. Second Level: List all Terms for a Class
@@ -36,15 +34,14 @@ def term_list(request, class_slug):
     Displays the list of terms (Term 1, 2, 3) available for the selected Class.
     """
     class_level = get_object_or_404(Classes, slug=class_slug)
-    # Fetch terms related to this class
-    terms = class_level.terms.all() 
+    # Assuming 'terms' is a related name from the Term model back to Classes
+    terms = class_level.term_set.all() # Changed to use default related_name if 'terms' isn't explicitly defined
     
     context = {
         'class_level': class_level,
         'terms': terms,
         'page_title': f'Select Term for {class_level.name}',
     }
-    # We will use a dedicated template for the terms list
     return render(request, 'shop/term_list.html', context)
 
 # 1.3. Third Level: List all Subjects for a Term
@@ -54,10 +51,10 @@ def subject_list(request, class_slug, term_slug):
     Optimized with prefetch_related for better performance.
     """
     class_level = get_object_or_404(Classes, slug=class_slug)
-    term = get_object_or_404(Term, class_name=class_level, slug=term_slug)
+    # IMPORTANT: Assumes Term model has a ForeignKey to Classes named 'class_name'
+    term = get_object_or_404(Term, class_name=class_level, slug=term_slug) 
     
     # Get all subjects with prefetched paper counts for this class/term
-    # This is MUCH more efficient than querying inside the template loop
     subjects = Subject.objects.all().prefetch_related(
         models.Prefetch(
             'papers',
@@ -80,8 +77,7 @@ def subject_list(request, class_slug, term_slug):
 # 1.4. Final Level: Paper Detail/Buy Page
 def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
     """
-    Displays the specific paper that the user can purchase.
-    This replaces the old 'paper_list' and sets up the single product page.
+    Displays the specific paper that the user can purchase (the product page).
     """
     # Fetch the specific Question Paper based on all slugs
     paper = get_object_or_404(QuestionPaper, 
@@ -100,7 +96,7 @@ def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
 
 
 # ====================================================================
-# 2. FORM DEFINITION (Kept)
+# 2. FORM DEFINITION 
 # ====================================================================
 
 class PurchaseForm(forms.Form):
@@ -109,6 +105,7 @@ class PurchaseForm(forms.Form):
         label='Email Address',
         widget=forms.EmailInput(attrs={'class': 'form-control'})
     )
+    # Note: Paystack mobile money usually requires the format to include the country code (e.g., +23324xxxxxxx)
     phone_number = forms.CharField(
         label='Mobile Money Number (e.g., 024xxxxxxx)',
         max_length=20,
@@ -117,18 +114,19 @@ class PurchaseForm(forms.Form):
 
 
 # ====================================================================
-# 3. PAYMENT INITIATION VIEW (The /buy/<paper_slug>/ page) - UPDATED
+# 3. PAYMENT INITIATION VIEW (MANDATORY: Resolves 'shop:buy_paper')
 # ====================================================================
 
-# CRITICAL CHANGE: Changed from paper_id to paper_slug
 def initiate_payment(request, paper_slug):
     """
     Handles displaying the form and initiating the payment with Paystack.
+    This view resolves the 'shop:buy_paper' URL reverse.
     """
     try:
         # 1. Get the Question Paper object using the slug
         paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     except Exception:
+        # Handles cases where the slug is valid but the object doesn't exist
         return render(request, 'shop/error.html', {'message': 'The requested item was not found.'})
 
     if request.method == 'POST':
@@ -145,7 +143,7 @@ def initiate_payment(request, paper_slug):
                 phone_number=phone_number
             )
             
-            # 3. Paystack API Call Setup (Same logic)
+            # 3. Paystack API Call Setup
             url = "https://api.paystack.co/transaction/initialize"
             headers = {
                 "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
@@ -157,7 +155,8 @@ def initiate_payment(request, paper_slug):
                 "amount": payment.amount_in_kobo(),
                 "currency": settings.CURRENCY_CODE,
                 "reference": str(payment.ref),
-                "callback_url": f"http://{request.get_host()}{reverse('shop:payment_callback')}", # Uses reverse()
+                # IMPORTANT: Use request.scheme for HTTPS on production
+                "callback_url": f"{request.scheme}://{request.get_host()}{reverse('shop:payment_callback')}",
                 "channels": ["mobile_money"],
             }
             
@@ -170,6 +169,7 @@ def initiate_payment(request, paper_slug):
                 return redirect(response_data['data']['authorization_url'])
             else:
                 # 6. Failure: Show a generic error page with the message from Paystack
+                print(f"Paystack Error: {response_data}") # Log error for debugging
                 return render(request, 'shop/error.html', {'message': response_data.get('message', 'Could not initiate payment.')})
     
     # 7. Initial GET request: Display the form
@@ -180,7 +180,7 @@ def initiate_payment(request, paper_slug):
 
 
 # ====================================================================
-# 4. PAYMENT CALLBACK VIEW (The /payment/callback/ page) - KEPT
+# 4. PAYMENT CALLBACK VIEW
 # ====================================================================
 
 def payment_callback(request):
@@ -189,15 +189,16 @@ def payment_callback(request):
     """
     reference = request.GET.get('reference')
     
+    # Optional: You can trigger payment verification here if you don't rely solely on the webhook
+    
     context = {
         'reference': reference,
     }
-    # Ensure this template path is correct
     return render(request, 'shop/callback_success.html', context)
 
 
 # ====================================================================
-# 5. PAYSTACK WEBHOOK HANDLER (The /webhooks/paystack/ page) - KEPT
+# 5. PAYSTACK WEBHOOK HANDLER
 # ====================================================================
 
 @csrf_exempt
@@ -210,8 +211,7 @@ def paystack_webhook(request):
         return HttpResponse(status=400)
 
     try:
-        # Check for Paystack signature for security (Optional, but best practice)
-        # signature = request.headers.get('x-paystack-signature') 
+        # NOTE: For production, you MUST verify the signature (using request.headers.get('x-paystack-signature'))
         
         payload = json.loads(request.body)
     except json.JSONDecodeError:
@@ -245,18 +245,20 @@ def paystack_webhook(request):
                 question_paper = payment.question_paper
                 
                 # Compose the SMS message
-                message = f"Your password for {question_paper.title} is: {question_paper.password}. Thank you for your purchase from DarkSon Solutions!" # Updated name
+                # BRAND NAME CHANGE: Updated from 'DarkSon Solutions'
+                message = f"Your password for {question_paper.title} is: {question_paper.password}. Thank you for your purchase from Insight Innovations!" 
                 
                 # Arkesel API Details
                 arkesel_url = "https://sms.arkesel.com/api/v2/sms/send"
                 arkesel_payload = {
-                    "sender": "Insight Innovations", # Changed sender ID to reflect new brand
+                    # BRAND NAME CHANGE: Updated sender ID
+                    "sender": "Insight Innovations", 
                     "message": message,
                     "recipients": [payment.phone_number],
                     "apiKey": settings.ARKESEL_API_KEY
                 }
 
-                # Send the SMS via Arkesel (Fire and Forget)
+                # Send the SMS via Arkesel
                 requests.post(arkesel_url, json=arkesel_payload)
                 
                 # Success Response for Paystack (MUST be 200 OK)
@@ -270,3 +272,36 @@ def paystack_webhook(request):
 
     # Respond successfully to all other Paystack events
     return JsonResponse({'status': 'success', 'message': 'Webhook received, but not a charge success event'}, status=200)
+
+# ====================================================================
+# 6. Placeholder Views (Needed for base.html links)
+# ====================================================================
+
+# These are often linked in the base template but may not have complex logic yet
+# They should be defined in urls.py and may require basic template files.
+
+# NOTE: The provided code does not show user authentication views. 
+# We assume they exist elsewhere or will be implemented later. 
+
+def profile(request):
+    """Placeholder for My Profile view."""
+    # Logic for displaying user purchases, history, etc.
+    return render(request, 'shop/profile.html', {'page_title': 'My Profile'})
+
+def purchase_history(request):
+    """Placeholder for Purchase History view."""
+    # Logic for listing previous payments/downloads
+    return render(request, 'shop/purchase_history.html', {'page_title': 'Purchase History'})
+
+def login(request):
+    """Placeholder for Login view."""
+    return redirect('admin:login') # Example: Redirect to Django Admin login for simplicity
+
+def logout(request):
+    """Placeholder for Logout view."""
+    # You will use Django's built-in logout function here
+    return redirect('shop:class_list')
+
+def register(request):
+    """Placeholder for Register view."""
+    return render(request, 'shop/register.html', {'page_title': 'Register'})
