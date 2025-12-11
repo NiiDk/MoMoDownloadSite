@@ -26,7 +26,7 @@ ALLOWED_HOSTS = [
     'localhost', 
     config('NGROK_TUNNEL', default=''), 
     '.render.com', 
-    'darksonsolutions.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
+    'InsightInnovations.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
     config('RENDER_EXTERNAL_HOSTNAME', default=''),
 ]
 
@@ -72,7 +72,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'DarkSonSolutions.urls'
+ROOT_URLCONF = 'InsightInnovations.urls'
 
 TEMPLATES = [
     {
@@ -90,7 +90,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'DarkSonSolutions.wsgi.application'
+WSGI_APPLICATION = 'InsightInnovations.wsgi.application'
 
 # ====================================================================
 # 💾 DATABASE
