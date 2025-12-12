@@ -23,8 +23,8 @@ class Classes(models.Model):
         return reverse('shop:term_list', args=[self.slug])
 
     def get_paper_count(self):
-        """Get total number of papers for this class"""
         return self.papers.count()
+
 
 # --- 2. Term Model ---
 class Term(models.Model):
@@ -44,8 +44,8 @@ class Term(models.Model):
         return reverse('shop:subject_list', args=[self.class_name.slug, self.slug])
 
     def get_paper_count(self):
-        """Get total number of papers for this term"""
         return self.papers.count()
+
 
 # --- 3. Subject Model ---
 class Subject(models.Model):
@@ -60,10 +60,10 @@ class Subject(models.Model):
         return self.name
 
     def get_paper_count(self):
-        """Get total number of papers for this subject"""
         return self.papers.count()
 
-# --- 4. QuestionPaper Model (Updated with all missing fields) ---
+
+# --- 4. QuestionPaper Model (FULLY UPDATED + FIX INCLUDED) ---
 class QuestionPaper(models.Model):
     # Core Information
     title = models.CharField(max_length=200)
@@ -145,13 +145,19 @@ class QuestionPaper(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse('shop:paper_detail', 
-                       args=[self.class_level.slug, self.term.slug, self.subject.slug, self.slug])
+        return reverse(
+            'shop:paper_detail',
+            args=[self.class_level.slug, self.term.slug, self.subject.slug, self.slug]
+        )
 
     def increment_views(self):
-        """Increment view count"""
         self.views += 1
         self.save(update_fields=['views'])
+
+    # ✅ FIX ADDED HERE
+    def get_display_title(self):
+        return self.title
+
 
 # --- 5. Payment Model ---
 class Payment(models.Model):
@@ -172,6 +178,7 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment for {self.question_paper.title} - Verified: {self.verified}"
+
 
 # --- 6. Paper Download History ---
 class DownloadHistory(models.Model):

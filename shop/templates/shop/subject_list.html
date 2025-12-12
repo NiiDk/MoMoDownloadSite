@@ -67,7 +67,6 @@
                         
                         {% if item.papers|length > 0 %}
                             {% if item.papers|length == 1 %}
-                                <!-- If only 1 paper, link directly to it -->
                                 {% with paper=item.papers.0 %}
                                     <a href="{% url 'shop:paper_detail' class_level.slug term.slug item.subject.slug paper.slug %}" 
                                        class="btn btn-info btn-sm mt-2">
@@ -75,7 +74,7 @@
                                     </a>
                                 {% endwith %}
                             {% else %}
-                                <!-- If multiple papers, link to subject papers list -->
+                                <!-- Corrected link -->
                                 <a href="{% url 'shop:subject_papers_list' class_level.slug term.slug item.subject.slug %}" 
                                    class="btn btn-info btn-sm mt-2">
                                     <i class="fas fa-list me-1"></i> Browse {{ item.papers|length }} Papers
@@ -116,7 +115,6 @@
         {% endfor %}
     </div>
     
-    <!-- Back Button -->
     <div class="mt-4 text-center">
         <a href="{% url 'shop:term_list' class_level.slug %}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i> Back to {{ class_level.name }} Terms
