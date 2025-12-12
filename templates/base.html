@@ -11,15 +11,121 @@
           crossorigin="anonymous">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
     <style>
-        .main-content {
-            min-height: calc(100vh - 140px); /* Adjust height for nav and footer */
-            padding-top: 20px;
-            padding-bottom: 20px;
+        :root {
+            --primary-color: #0d6efd;
+            --info-color: #0dcaf0;
+            --dark-color: #212529;
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-top: 76px; /* Account for fixed navbar */
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px 0;
+            min-height: calc(100vh - 200px);
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
         .offcanvas-body .nav-link {
             font-size: 1.1rem;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .offcanvas-body .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .offcanvas-body .nav-link.active {
+            background-color: rgba(13, 110, 253, 0.2);
+            border-left: 4px solid var(--info-color);
+        }
+        
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);
+            border: none;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(135deg, #0aa2c0 0%, #088199 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(13, 202, 240, 0.3);
+        }
+        
+        .card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .footer {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            margin-top: auto;
+        }
+        
+        .footer a {
+            color: #0dcaf0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 66px;
+            }
+        }
+        
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(13, 110, 253, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
     
@@ -27,10 +133,11 @@
 </head>
 <body>
     
+    <!-- Drawer/Offcanvas Menu -->
     <div class="offcanvas offcanvas-start bg-dark text-white" 
-          tabindex="-1" 
-          id="siteDrawer" 
-          aria-labelledby="siteDrawerLabel">
+         tabindex="-1" 
+         id="siteDrawer" 
+         aria-labelledby="siteDrawerLabel">
 
         <div class="offcanvas-header border-bottom border-secondary">
             <h5 class="offcanvas-title fw-bold" id="siteDrawerLabel">
@@ -46,38 +153,78 @@
             <nav class="drawer-nav">
                 <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
                     
+                    <!-- Home -->
                     <li class="nav-item">
                         <a href="{% url 'shop:class_list' %}" 
-                           class="nav-link text-white {% if request.resolver_match.url_name == 'class_list' or request.resolver_match.url_name == 'home' %}active fw-bold bg-primary bg-opacity-25 rounded{% endif %}">
-                            <i class="fas fa-home me-2"></i> Home (Classes)
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'shop:class_list' %}" 
-                           class="nav-link text-white">
-                            <i class="fas fa-shopping-cart me-2"></i> Buy Papers
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'class_list' %}active{% endif %}">
+                            <i class="fas fa-home me-2"></i> Home
                         </a>
                     </li>
                     
+                    <!-- Browse Papers -->
+                    <li class="nav-item">
+                        <a href="{% url 'shop:all_papers' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'all_papers' %}active{% endif %}">
+                            <i class="fas fa-file-alt me-2"></i> Browse All Papers
+                        </a>
+                    </li>
+                    
+                    <!-- Search -->
+                    <li class="nav-item">
+                        <a href="{% url 'shop:search_papers' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'search_papers' %}active{% endif %}">
+                            <i class="fas fa-search me-2"></i> Search Papers
+                        </a>
+                    </li>
+                    
+                    <!-- Browse by Year -->
+                    <li class="nav-item">
+                        <a href="{% url 'shop:papers_by_year' year=2024 %}" 
+                           class="nav-link text-white">
+                            <i class="fas fa-calendar-alt me-2"></i> 2024 Papers
+                        </a>
+                    </li>
+                    
+                    <!-- Contact -->
                     <li class="nav-item">
                         <a href="{% url 'shop:contact_us' %}" 
-                           class="nav-link text-white {% if request.resolver_match.url_name == 'contact_us' %}active fw-bold bg-primary bg-opacity-25 rounded{% endif %}">
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'contact_us' %}active{% endif %}">
                             <i class="fas fa-envelope me-2"></i> Contact Us
                         </a>
                     </li>
-                    <li class="nav-item my-2">
+                    
+                    <!-- FAQ -->
+                    <li class="nav-item">
+                        <a href="{% url 'shop:faq' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'faq' %}active{% endif %}">
+                            <i class="fas fa-question-circle me-2"></i> FAQ
+                        </a>
+                    </li>
+                    
+                    <!-- About -->
+                    <li class="nav-item">
+                        <a href="{% url 'shop:about' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+                            <i class="fas fa-info-circle me-2"></i> About Us
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item my-3">
                         <hr class="text-white-50">
-                        <h6 class="text-secondary text-uppercase ms-3 mt-3">Account & History</h6>
+                        <h6 class="text-info text-uppercase ms-3">Account</h6>
                     </li>
 
                     {% if user.is_authenticated %}
+                    <!-- Authenticated User -->
                     <li class="nav-item">
-                        <a href="{% url 'shop:profile' %}" class="nav-link text-white">
+                        <a href="{% url 'shop:profile' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
                             <i class="fas fa-user me-2"></i> My Profile
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'shop:purchase_history' %}" class="nav-link text-white">
+                        <a href="{% url 'shop:purchase_history' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'purchase_history' %}active{% endif %}">
                             <i class="fas fa-history me-2"></i> Purchase History
                         </a>
                     </li>
@@ -87,35 +234,53 @@
                         </a>
                     </li>
                     {% else %}
+                    <!-- Guest User -->
                     <li class="nav-item">
-                        <a href="{% url 'shop:login' %}" class="nav-link text-white">
+                        <a href="{% url 'shop:login' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'login' %}active{% endif %}">
                             <i class="fas fa-sign-in-alt me-2"></i> Login
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'shop:register' %}" class="nav-link text-white">
+                        <a href="{% url 'shop:register' %}" 
+                           class="nav-link text-white {% if request.resolver_match.url_name == 'register' %}active{% endif %}">
                             <i class="fas fa-user-plus me-2"></i> Register
                         </a>
                     </li>
                     {% endif %}
                     
-                    <li class="nav-item my-2">
+                    <!-- Admin Access -->
+                    {% if user.is_staff %}
+                    <li class="nav-item my-3">
                         <hr class="text-white-50">
-                        <h6 class="text-secondary text-uppercase ms-3 mt-3">Admin Access</h6>
+                        <h6 class="text-warning text-uppercase ms-3">Admin</h6>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-info" href="{% url 'admin:index' %}" target="_blank">
+                        <a class="nav-link text-warning" href="{% url 'admin:index' %}" target="_blank">
                             <i class="fas fa-user-shield me-2"></i> Django Admin
                         </a>
                     </li>
-
+                    {% endif %}
                 </ul>
             </nav>
         </div>
+        
+        <!-- Drawer Footer -->
+        <div class="offcanvas-footer p-3 border-top border-secondary">
+            <div class="text-center">
+                <small class="text-white-50">
+                    &copy; {% now "Y" %} Insight Innovations<br>
+                    <span class="text-info">Quality Educational Resources</span>
+                </small>
+            </div>
+        </div>
     </div>
+
+    <!-- Top Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow">
         <div class="container">
             
+            <!-- Drawer Toggle Button (Mobile) -->
             <button class="btn btn-outline-info me-3 d-lg-none" 
                     type="button" 
                     data-bs-toggle="offcanvas" 
@@ -124,68 +289,385 @@
                 <i class="fas fa-bars"></i>
             </button>
             
+            <!-- Brand Logo -->
             <a class="navbar-brand fw-bold" href="{% url 'shop:class_list' %}">
                 <span class="text-info">📚</span> Insight Innovations
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <!-- Search Form (Desktop) -->
+            <form class="d-none d-lg-flex ms-auto me-3" action="{% url 'shop:search_papers' %}" method="GET" style="max-width: 300px;">
+                <div class="input-group input-group-sm">
+                    <input type="text" 
+                           class="form-control" 
+                           placeholder="Search papers..." 
+                           name="q"
+                           value="{{ request.GET.q }}">
+                    <button class="btn btn-outline-info" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
+            <!-- Main Navigation -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    <!-- Home -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'shop:class_list' %}">Classes</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'shop:class_list' %}">Buy Papers</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'class_list' %}active{% endif %}" 
+                           href="{% url 'shop:class_list' %}">
+                            <i class="fas fa-home d-lg-none d-xl-inline me-1"></i>
+                            <span class="d-none d-lg-inline">Home</span>
+                        </a>
                     </li>
                     
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'shop:contact_us' %}">Contact</a>
+                    <!-- Browse Papers Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-file-alt d-lg-none d-xl-inline me-1"></i>
+                            <span class="d-none d-lg-inline">Browse Papers</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'shop:all_papers' %}">
+                                <i class="fas fa-file-alt me-2"></i> All Papers
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'shop:papers_by_year' year=2024 %}">
+                                <i class="fas fa-calendar-alt me-2"></i> 2024 Papers
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><h6 class="dropdown-header">By Exam Type</h6></li>
+                            <li><a class="dropdown-item" href="{% url 'shop:papers_by_type' exam_type='endterm' %}">
+                                <i class="fas fa-file-contract me-2"></i> End-Term Exams
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'shop:papers_by_type' exam_type='midterm' %}">
+                                <i class="fas fa-file-medical me-2"></i> Mid-Term Exams
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'shop:papers_by_type' exam_type='cat' %}">
+                                <i class="fas fa-file-check me-2"></i> CATs
+                            </a></li>
+                        </ul>
                     </li>
-                    {% if user.is_authenticated %}
+                    
+                    <!-- Contact -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'shop:profile' %}">Profile</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'contact_us' %}active{% endif %}" 
+                           href="{% url 'shop:contact_us' %}">
+                            <i class="fas fa-envelope d-lg-none d-xl-inline me-1"></i>
+                            <span class="d-none d-lg-inline">Contact</span>
+                        </a>
+                    </li>
+                    
+                    <!-- User Dropdown -->
+                    {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user d-lg-none d-xl-inline me-1"></i>
+                            <span class="d-none d-lg-inline">{{ user.username|truncatechars:15 }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'shop:profile' %}">
+                                <i class="fas fa-user me-2"></i> Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'shop:purchase_history' %}">
+                                <i class="fas fa-history me-2"></i> Purchase History
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{% url 'shop:logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i> Logout
+                            </a></li>
+                        </ul>
                     </li>
                     {% else %}
+                    <!-- Login/Register -->
                     <li class="nav-item">
-                        <a class="nav-link btn btn-info text-dark fw-bold ms-2" href="{% url 'shop:login' %}">
-                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        <a class="nav-link btn btn-info text-dark fw-bold ms-lg-2" href="{% url 'shop:login' %}">
+                            <i class="fas fa-sign-in-alt me-1"></i> 
+                            <span class="d-none d-lg-inline">Login / Register</span>
+                            <span class="d-lg-none">Login</span>
                         </a>
                     </li>
                     {% endif %}
+                    
+                    <!-- Search Button (Mobile) -->
+                    <li class="nav-item d-lg-none mt-2">
+                        <form class="d-flex" action="{% url 'shop:search_papers' %}" method="GET">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       placeholder="Search papers..." 
+                                       name="q"
+                                       value="{{ request.GET.q }}">
+                                <button class="btn btn-outline-info" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
     
+    <!-- Breadcrumbs -->
     {% if breadcrumbs %}
-        {% include 'shop/breadcrumbs.html' %}
+        <nav aria-label="breadcrumb" class="container mt-3">
+            <ol class="breadcrumb bg-light p-2 rounded shadow-sm">
+                {% for crumb in breadcrumbs %}
+                    {% if forloop.last %}
+                        <li class="breadcrumb-item active">{{ crumb.name }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item"><a href="{{ crumb.url }}">{{ crumb.name }}</a></li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </nav>
     {% endif %}
 
+    <!-- Messages/Alerts -->
+    {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                    {% if message.tags == 'success' %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        <i class="fas fa-times-circle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
     <main class="container main-content">
         {% block content %}
         {% endblock %}
     </main>
 
+    <!-- Footer -->
     <footer class="bg-dark text-white py-4 mt-4 border-top border-info border-opacity-50">
         <div class="container">
             <div class="row">
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <h5 class="text-info mb-3">
+                        <span class="text-info">📚</span> Insight Innovations
+                    </h5>
+                    <p class="small text-white-50">
+                        Your trusted source for quality educational resources, 
+                        examination papers, and learning materials.
+                    </p>
+                    <div class="social-links mt-3">
+                        <a href="#" class="text-info me-3" title="Facebook">
+                            <i class="fab fa-facebook fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-info me-3" title="Twitter">
+                            <i class="fab fa-twitter fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-info me-3" title="Instagram">
+                            <i class="fab fa-instagram fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-info" title="WhatsApp">
+                            <i class="fab fa-whatsapp fa-lg"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <h6 class="text-white mb-3">Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="{% url 'shop:class_list' %}">Home</a></li>
+                        <li class="mb-2"><a href="{% url 'shop:all_papers' %}">Browse Papers</a></li>
+                        <li class="mb-2"><a href="{% url 'shop:search_papers' %}">Search</a></li>
+                        <li class="mb-2"><a href="{% url 'shop:contact_us' %}">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-3 col-md-4 mb-4 mb-md-0">
+                    <h6 class="text-white mb-3">Account</h6>
+                    <ul class="list-unstyled">
+                        {% if user.is_authenticated %}
+                        <li class="mb-2"><a href="{% url 'shop:profile' %}">My Profile</a></li>
+                        <li class="mb-2"><a href="{% url 'shop:purchase_history' %}">Purchase History</a></li>
+                        <li class="mb-2"><a href="{% url 'shop:logout' %}">Logout</a></li>
+                        {% else %}
+                        <li class="mb-2"><a href="{% url 'shop:login' %}">Login</a></li>
+                        <li class="mb-2"><a href="{% url 'shop:register' %}">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div class="col-lg-3 col-md-4">
+                    <h6 class="text-white mb-3">Contact Info</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-envelope me-2 text-info"></i>
+                            <a href="mailto:darkosammy2@gmail.com">darkosammy2@gmail.com</a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-phone me-2 text-info"></i>
+                            <a href="tel:+233542232515">+233 542 232 515</a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-map-marker-alt me-2 text-info"></i>
+                            Accra, Ghana
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <hr class="border-info my-4">
+            
+            <div class="row">
                 <div class="col-md-6">
-                    <h5 class="text-info">Insight Innovations</h5>
-                    <p class="small text-white-50">Your trusted source for educational papers and resources.</p>
+                    <p class="small mb-0">
+                        &copy; {% now "Y" %} Insight Innovations. All rights reserved.
+                    </p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="small">&copy; {% now "Y" %} Insight Innovations. All rights reserved.</p>
+                    <p class="small mb-0">
+                        <a href="{% url 'shop:privacy_policy' %}" class="me-3">Privacy Policy</a>
+                        <a href="{% url 'shop:terms_of_service' %}" class="me-3">Terms of Service</a>
+                        <a href="{% url 'shop:faq' %}">FAQ</a>
+                    </p>
                 </div>
             </div>
         </div>
     </footer>
 
+    <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Add active class to current nav links
+        document.addEventListener('DOMContentLoaded', function() {
+            // Highlight current page in drawer
+            const currentPath = window.location.pathname;
+            const drawerLinks = document.querySelectorAll('.offcanvas-body .nav-link');
+            
+            drawerLinks.forEach(link => {
+                const linkPath = new URL(link.href, window.location.origin).pathname;
+                if (linkPath === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Highlight current page in navbar
+            const navLinks = document.querySelectorAll('.navbar-nav .nav-link:not(.dropdown-toggle)');
+            navLinks.forEach(link => {
+                const linkPath = new URL(link.href, window.location.origin).pathname;
+                if (linkPath === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Auto-dismiss alerts after 5 seconds
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(alert => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+            
+            // Add loading state to buttons with .btn-loading class
+            document.querySelectorAll('.btn-loading').forEach(button => {
+                button.addEventListener('click', function() {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<span class="loading me-2"></span> Processing...';
+                    this.disabled = true;
+                    
+                    // Restore button after 3 seconds
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }, 3000);
+                });
+            });
+        });
+        
+        // Simple form validation helper
+        function validateForm(formId) {
+            const form = document.getElementById(formId);
+            const inputs = form.querySelectorAll('input[required], textarea[required], select[required]');
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    input.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            });
+            
+            return isValid;
+        }
+        
+        // AJAX helper function
+        async function makeAjaxRequest(url, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url, options);
+                return await response.json();
+            } catch (error) {
+                console.error('AJAX request failed:', error);
+                return { success: false, error: 'Network error' };
+            }
+        }
+        
+        // Helper to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Track paper views (for paper detail pages)
+        function trackPaperView(paperSlug) {
+            if (paperSlug) {
+                fetch(`/api/paper/${paperSlug}/track-view/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                });
+            }
+        }
+    </script>
     
     {% block extra_js %}{% endblock %}
 </body>
