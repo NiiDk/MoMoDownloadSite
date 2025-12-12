@@ -1,63 +1,49 @@
 # InsightInnovations/settings.py
 
-"""
-Django settings for InsightInnovations project.
-"""
-
 from pathlib import Path
-# No change needed here if 'python-decouple' is in requirements.txt:
 from decouple import config 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ====================================================================
-# 🔒 SECURITY AND HOSTS (Load all secrets from .env)
+# SECURITY AND HOSTS
 # ====================================================================
 
-# SECURITY WARNING: Loaded from .env file for security.
-SECRET_KEY = config('SECRET_KEY') 
-
-# SECURITY WARNING: Do NOT deploy with DEBUG = True!
+SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = [
-    '127.0.0.1', 
-    'localhost', 
-    config('NGROK_TUNNEL', default=''), 
-    '.render.com', 
-    'InsightInnovations.onrender.com', # <--- YOUR ACTUAL LIVE DOMAIN
+    '127.0.0.1',
+    'localhost',
+    config('NGROK_TUNNEL', default=''),
+    '.render.com',
+    'InsightInnovations.onrender.com',
     config('RENDER_EXTERNAL_HOSTNAME', default=''),
 ]
 
 # ====================================================================
-# 🔑 CUSTOM SETTINGS: API KEYS AND CURRENCY (Loaded from .env)
+# API KEYS
 # ====================================================================
 
-# Paystack Keys (Loaded from .env file)
 PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
-
-# SMS (Arkesel) Key (Loaded from .env file)
 ARKESEL_API_KEY = config('ARKESEL_API_KEY')
-
-# Currency Setting
-CURRENCY_CODE = 'GHS' 
+CURRENCY_CODE = 'GHS'
 
 # ====================================================================
-# 📧 EMAIL CONFIGURATION (CRITICAL: Used by contact_us view)
+# EMAIL CONFIG
 # ====================================================================
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER') # Loaded from .env
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD') # Loaded from .env
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
 # ====================================================================
-# APPLICATION DEFINITION
+# APPLICATIONS
 # ====================================================================
 
 INSTALLED_APPS = [
@@ -67,14 +53,17 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Your custom application
-    'shop', 
+
+    # Cloudinary
+    'cloudinary',
+    'cloudinary_storage',
+
+    # Custom app
+    'shop',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # 🔥 FIX 1: ADD WHITE NOISE HERE to serve static files in production (fixes Admin CSS)
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -89,7 +78,7 @@ ROOT_URLCONF = 'InsightInnovations.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], # Reverted the fix as it was incorrectly commented
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -105,13 +94,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'InsightInnovations.wsgi.application'
 
 # ====================================================================
-# 💾 DATABASE
+# DATABASE
 # ====================================================================
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3', 
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -120,38 +109,29 @@ DATABASES = {
 # ====================================================================
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_TZ = True
-
 # ====================================================================
-# 🖥️ STATIC FILES (CRITICAL FOR DEPLOYMENT)
+# STATIC & MEDIA FILES
 # ====================================================================
 
-# Base URL for static assets
 STATIC_URL = 'static/'
-
-# Directory where static files will be collected by 'collectstatic'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# 🔥 FIX 2: TELL WHITENOISE HOW TO HANDLE STATIC FILES IN PRODUCTION
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type
+# -----------------------------
+# 🔥 CLOUDINARY MEDIA STORAGE
+# -----------------------------
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+MEDIA_URL = '/media/'
+
+# ====================================================================
+# DEFAULT PK
+# ====================================================================
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
