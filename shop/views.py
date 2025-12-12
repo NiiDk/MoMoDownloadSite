@@ -17,13 +17,18 @@ import os
 # 1. HIERARCHICAL LIST VIEWS (Navigation)
 # ====================================================================
 
+# ... existing imports ...
+
+# ====================================================================
+# 1. HIERARCHICAL LIST VIEWS (Navigation)
+# ====================================================================
+
 # 1.1. Homepage: List all Classes/Grades
 def class_list(request):
-    """
-    Displays the top-level list of all available Classes (e.g., JHS 1).
-    This is the new homepage, aliased by the root URL '/'.
-    """
-    classes = Classes.objects.all()
+    classes = Classes.objects.annotate(
+        paper_count=models.Count('papers', filter=models.Q(papers__is_available=True))
+    ).order_by('order', 'name')
+    
     context = {
         'classes': classes,
         'page_title': 'Select Your Class/Grade',
@@ -33,13 +38,11 @@ def class_list(request):
     
 # 1.2. Second Level: List all Terms for a Class
 def term_list(request, class_slug):
-    """
-    Displays the list of terms (Term 1, 2, 3) available for the selected Class.
-    """
     class_level = get_object_or_404(Classes, slug=class_slug)
     
-    # FIX APPLIED HERE: Used the correct related_name 'terms' defined in shop/models.py
-    terms = class_level.terms.all()
+    terms = Term.objects.filter(class_name=class_level).annotate(
+        paper_count=models.Count('papers', filter=models.Q(papers__is_available=True))
+    ).order_by('order', 'name')
     
     context = {
         'class_level': class_level,
@@ -48,69 +51,119 @@ def term_list(request, class_slug):
     }
     return render(request, 'shop/term_list.html', context)
 
-# 1.3. Third Level: List all Subjects for a Term
+# 1.3. Third Level: List all Subjects for a Term (UPDATED)
 def subject_list(request, class_slug, term_slug):
     """
-    Displays the list of subjects available for the selected Class and Term.
-    Optimized with prefetch_related for better performance.
+    Displays ALL subjects and ALL papers for each subject.
     """
     class_level = get_object_or_404(Classes, slug=class_slug)
-    # IMPORTANT: Assumes Term model has a ForeignKey to Classes named 'class_name'
-    term = get_object_or_404(Term, class_name=class_level, slug=term_slug) 
+    term = get_object_or_404(Term, class_name=class_level, slug=term_slug)
     
-    # Get all subjects with prefetched paper counts for this class/term
-    subjects = Subject.objects.all().prefetch_related(
-        models.Prefetch(
-            'papers',
-            queryset=QuestionPaper.objects.filter(
-                class_level=class_level, 
-                term=term
-            ),
-            to_attr='filtered_papers'
-        )
-    )
-
+    # Get ALL available papers for this class and term
+    all_papers = QuestionPaper.objects.filter(
+        class_level=class_level,
+        term=term,
+        is_available=True
+    ).select_related('subject').order_by('subject__name', '-year', 'exam_type')
+    
+    # Group papers by subject
+    papers_by_subject = {}
+    for paper in all_papers:
+        if paper.subject_id not in papers_by_subject:
+            papers_by_subject[paper.subject_id] = {
+                'subject': paper.subject,
+                'papers': []
+            }
+        papers_by_subject[paper.subject_id]['papers'].append(paper)
+    
+    # Get all subjects (including those without papers)
+    all_subjects = Subject.objects.all().order_by('name')
+    
+    # Prepare final subjects list
+    subjects_list = []
+    for subject in all_subjects:
+        if subject.id in papers_by_subject:
+            subjects_list.append(papers_by_subject[subject.id])
+        else:
+            subjects_list.append({
+                'subject': subject,
+                'papers': []
+            })
+    
     context = {
         'class_level': class_level,
         'term': term,
-        'subjects': subjects,
+        'subjects_list': subjects_list,
+        'total_papers': all_papers.count(),
         'page_title': f'{class_level.name} {term.name} - Select Subject',
     }
     return render(request, 'shop/subject_list.html', context)
+
+# 1.4. NEW: Subject Papers List View
+def subject_papers_list(request, class_slug, term_slug, subject_slug):
+    """
+    Shows ALL papers for a specific subject in a class and term.
+    """
+    class_level = get_object_or_404(Classes, slug=class_slug)
+    term = get_object_or_404(Term, class_name=class_level, slug=term_slug)
+    subject = get_object_or_404(Subject, slug=subject_slug)
     
-# 1.4. Final Level: Paper Detail/Buy Page
+    papers = QuestionPaper.objects.filter(
+        class_level=class_level,
+        term=term,
+        subject=subject,
+        is_available=True
+    ).order_by('-year', 'exam_type', 'title')
+    
+    context = {
+        'class_level': class_level,
+        'term': term,
+        'subject': subject,
+        'papers': papers,
+        'paper_count': papers.count(),
+        'page_title': f'{class_level.name} {term.name} - {subject.name} Papers',
+    }
+    return render(request, 'shop/subject_papers_list.html', context)
+
+# 1.5. Final Level: Paper Detail/Buy Page
 def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
-    """
-    Displays the specific paper that the user can purchase (the product page).
-    Adds dynamic button text and URL based on the 'is_paid' status.
-    """
-    # Fetch the specific Question Paper based on all slugs
     paper = get_object_or_404(QuestionPaper, 
         class_level__slug=class_slug,
         term__slug=term_slug,
         subject__slug=subject_slug,
-        slug=paper_slug
+        slug=paper_slug,
+        is_available=True
     )
-
-    # === DYNAMIC BUTTON LOGIC ===
+    
+    # Increment view count
+    paper.increment_views()
+    
+    # Get related papers (other papers in same subject)
+    related_papers = QuestionPaper.objects.filter(
+        class_level=paper.class_level,
+        term=paper.term,
+        subject=paper.subject,
+        is_available=True
+    ).exclude(id=paper.id).order_by('-year')[:5]
+    
     if paper.is_paid:
-        # If paid, use the payment initiation URL
         button_url = reverse('shop:buy_paper', args=[paper.slug])
         button_text = "Buy Now & Get Password via SMS"
     else:
-        # If free, use the new dedicated free download landing page URL
         button_url = reverse('shop:download_page', args=[paper.slug])
         button_text = "Free Download"
-    # ============================
     
     context = {
         'paper': paper,
-        'page_title': paper.title,
+        'related_papers': related_papers,
+        'page_title': paper.get_display_title(),
         'currency_code': settings.CURRENCY_CODE,
-        'button_url': button_url,      # Passed to paper_detail.html
-        'button_text': button_text     # Passed to paper_detail.html
+        'button_url': button_url,
+        'button_text': button_text
     }
     return render(request, 'shop/paper_detail.html', context)
+
+# ... rest of the views remain the same ...
 
 
 # ====================================================================

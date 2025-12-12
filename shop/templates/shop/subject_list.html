@@ -1,59 +1,133 @@
 {% extends 'base.html' %}
 
-{% block page_title %}{{ class_level.name }} {{ term.name }} - Select Subject{% endblock page_title %}
+{% block page_title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-    <h2 class="mb-4 text-center text-secondary">
-        <i class="bi bi-journal-bookmark"></i> Subjects for {{ class_level.name }} - {{ term.name }}
-    </h2>
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shop:class_list' %}">Classes</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shop:term_list' class_level.slug %}">{{ class_level.name }}</a></li>
+            <li class="breadcrumb-item active">{{ term.name }} Subjects</li>
+        </ol>
+    </nav>
     
-    <div class="text-center mb-4">
-        <a href="{% url 'shop:term_list' class_level.slug %}" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-arrow-left"></i> Back to Terms
-        </a>
+    <!-- Header -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-info text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="fas fa-graduation-cap me-2"></i>{{ class_level.name }}
+                    </h2>
+                    <p class="mb-0">{{ term.name }} - Available Subjects</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark fs-5">
+                        <i class="fas fa-file-alt me-1"></i> {{ total_papers }} Papers
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="lead mb-0">
+                Select a subject to view all available question papers.
+            </p>
+        </div>
     </div>
     
+    <!-- Subjects Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for subject_obj in subjects %}
+        {% for item in subjects_list %}
             <div class="col">
-                <div class="card card-class text-center h-100 shadow-sm border">
-                    <div class="card-body p-4">
-                        <h5 class="card-title text-dark fw-bold">{{ subject_obj.name }}</h5>
-                        
-                        {% with papers_count=subject_obj.filtered_papers|length %}
+                <div class="card h-100 shadow-sm border-0 hover-shadow">
+                    <div class="card-body text-center p-4">
                         <div class="mb-3">
-                            <span class="badge {% if papers_count > 0 %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
-                                {{ papers_count }} Paper{{ papers_count|pluralize }}
+                            {% if item.subject.icon %}
+                                <i class="fas {{ item.subject.icon }} fa-3x text-info"></i>
+                            {% else %}
+                                <i class="fas fa-book fa-3x text-info"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <h4 class="card-title text-dark fw-bold mb-2">{{ item.subject.name }}</h4>
+                        
+                        <div class="mb-3">
+                            <span class="badge {% if item.papers|length > 0 %}bg-success{% else %}bg-secondary{% endif %} rounded-pill fs-6">
+                                {{ item.papers|length }} Paper{{ item.papers|length|pluralize }}
                             </span>
                         </div>
                         
-                        {% if papers_count > 0 %}
-                            {% with paper=subject_obj.filtered_papers.0 %}
-                                <a href="{% url 'shop:paper_detail' class_level.slug term.slug subject_obj.slug paper.slug %}" 
+                        {% if item.subject.description %}
+                            <p class="card-text text-muted small mb-3">
+                                {{ item.subject.description|truncatewords:15 }}
+                            </p>
+                        {% endif %}
+                        
+                        {% if item.papers|length > 0 %}
+                            {% if item.papers|length == 1 %}
+                                <!-- If only 1 paper, link directly to it -->
+                                {% with paper=item.papers.0 %}
+                                    <a href="{% url 'shop:paper_detail' class_level.slug term.slug item.subject.slug paper.slug %}" 
+                                       class="btn btn-info btn-sm mt-2">
+                                        <i class="fas fa-eye me-1"></i> View Paper
+                                    </a>
+                                {% endwith %}
+                            {% else %}
+                                <!-- If multiple papers, link to subject papers list -->
+                                <a href="{% url 'shop:subject_papers_list' class_level.slug term.slug item.subject.slug %}" 
                                    class="btn btn-info btn-sm mt-2">
-                                    <i class="bi bi-eye"></i> View Available Paper{{ papers_count|pluralize }}
+                                    <i class="fas fa-list me-1"></i> Browse {{ item.papers|length }} Papers
                                 </a>
-                            {% endwith %}
+                            {% endif %}
                         {% else %}
                             <button class="btn btn-outline-secondary btn-sm mt-2" disabled>
-                                <i class="bi bi-slash-circle"></i> No Papers Yet
+                                <i class="fas fa-slash-circle me-1"></i> No Papers Yet
                             </button>
                         {% endif %}
-                        {% endwith %}
-                        
+                    </div>
+                    
+                    <div class="card-footer bg-transparent text-center">
+                        <small class="text-muted">
+                            {% if item.papers|length > 0 %}
+                                Latest: 
+                                {% with paper=item.papers.0 %}
+                                    {{ paper.year }} {{ paper.get_exam_type_display }}
+                                {% endwith %}
+                            {% else %}
+                                Coming soon
+                            {% endif %}
+                        </small>
                     </div>
                 </div>
             </div>
         {% empty %}
             <div class="col-12">
-                <div class="alert alert-danger text-center" role="alert">
-                    <h4 class="alert-heading">
-                        <i class="bi bi-exclamation-triangle"></i> No Subjects Defined
-                    </h4>
+                <div class="alert alert-warning text-center py-5" role="alert">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <h4 class="alert-heading">No Subjects Defined</h4>
                     <p>Please add subjects in the admin panel.</p>
-                    <a href="{% url 'admin:index' %}" class="btn btn-outline-danger">Go to Admin</a>
+                    <a href="{% url 'admin:index' %}" class="btn btn-outline-warning">
+                        <i class="fas fa-cog me-1"></i> Go to Admin
+                    </a>
                 </div>
             </div>
         {% endfor %}
     </div>
-{% endblock content %}
+    
+    <!-- Back Button -->
+    <div class="mt-4 text-center">
+        <a href="{% url 'shop:term_list' class_level.slug %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to {{ class_level.name }} Terms
+        </a>
+    </div>
+</div>
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        transition: transform 0.2s ease;
+    }
+</style>
+{% endblock %}

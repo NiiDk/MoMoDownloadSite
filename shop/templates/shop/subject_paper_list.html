@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'shop:class_list' %}">Classes</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shop:term_list' class_level.slug %}">{{ class_level.name }}</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'shop:subject_list' class_level.slug term.slug %}">{{ term.name }}</a></li>
+            <li class="breadcrumb-item active">{{ subject.name }}</li>
+        </ol>
+    </nav>
+    
+    <!-- Header -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-info text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">
+                        <i class="fas fa-book me-2"></i>{{ subject.name }}
+                    </h2>
+                    <p class="mb-0">{{ class_level.name }} - {{ term.name }}</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-light text-dark fs-5">
+                        <i class="fas fa-file-alt me-1"></i> {{ paper_count }} Paper{{ paper_count|pluralize }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="lead mb-0">
+                Browse all available question papers for {{ subject.name }} in {{ term.name }}.
+                {% if subject.description %}<br><small class="text-muted">{{ subject.description }}</small>{% endif %}
+            </p>
+        </div>
+    </div>
+    
+    <!-- Papers Grid -->
+    {% if papers %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for paper in papers %}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0 text-truncate">{{ paper.title }}</h5>
+                            {% if paper.is_paid %}
+                                <span class="badge bg-warning text-dark">Ksh {{ paper.price }}</span>
+                            {% else %}
+                                <span class="badge bg-success">FREE</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <span class="badge bg-secondary me-1">{{ paper.year }}</span>
+                            <span class="badge bg-info me-1">{{ paper.get_exam_type_display }}</span>
+                            <span class="badge bg-light text-dark">
+                                <i class="fas fa-eye me-1"></i>{{ paper.views }}
+                            </span>
+                        </div>
+                        
+                        <p class="card-text text-muted small">
+                            {{ paper.file_size }} • {{ paper.pages }} page{{ paper.pages|pluralize }}
+                        </p>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>
+                                Added {{ paper.created_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-transparent">
+                        <div class="d-grid">
+                            <a href="{% url 'shop:paper_detail' class_level.slug term.slug subject.slug paper.slug %}" 
+                               class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-eye me-1"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- No papers message -->
+    {% else %}
+        <div class="alert alert-warning text-center py-5">
+            <div class="py-4">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h3>No Papers Available</h3>
+                <p class="lead">There are currently no question papers available for {{ subject.name }} in {{ term.name }}.</p>
+                <div class="mt-3">
+                    <a href="{% url 'shop:subject_list' class_level.slug term.slug %}" 
+                       class="btn btn-outline-warning">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Subjects
+                    </a>
+                    <a href="{% url 'admin:shop_questionpaper_add' %}" 
+                       target="_blank" 
+                       class="btn btn-warning ms-2">
+                        <i class="fas fa-plus me-1"></i> Add Paper (Admin)
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Back Button -->
+    <div class="mt-4 text-center">
+        <a href="{% url 'shop:subject_list' class_level.slug term.slug %}" 
+           class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to All Subjects
+        </a>
+    </div>
+</div>
+{% endblock %}
