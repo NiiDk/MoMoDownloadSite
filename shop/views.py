@@ -515,4 +515,268 @@ def contact_us(request):
         'email': 'darkosammy2@gmail.com',
         'location': 'Accra, Ghana'
     }
+
+# Add these functions at the end of your views.py file (before the last line if any)
+
+# ====================================================================
+# ADDITIONAL VIEWS FOR STATIC PAGES
+# ====================================================================
+
+def about(request):
+    """About page"""
+    context = {
+        'page_title': 'About Us',
+        'content': """
+        <p>Welcome to <strong>Insight Innovations</strong> - your premier destination for quality educational resources.</p>
+        
+        <h5>Our Mission</h5>
+        <p>We strive to empower students and educators by providing accessible, high-quality examination papers and learning materials.</p>
+        
+        <h5>What We Offer</h5>
+        <ul>
+            <li>Comprehensive collection of past examination papers</li>
+            <li>Organized by class, term, and subject for easy navigation</li>
+            <li>Both free samples and premium content</li>
+            <li>Instant access after purchase</li>
+            <li>Secure payment processing</li>
+        </ul>
+        
+        <h5>Our Team</h5>
+        <p>We are a team of dedicated educators and technologists passionate about improving education through technology.</p>
+        """
+    }
+    return render(request, 'shop/about.html', context)
+
+
+def faq(request):
+    """Frequently Asked Questions page"""
+    faqs = [
+        {
+            'question': 'How do I download papers?',
+            'answer': 'Browse through classes, terms, and subjects to find the paper you need. Click on the paper to view details, then click "Buy Now" for paid papers or "Free Download" for free samples.'
+        },
+        {
+            'question': 'What payment methods do you accept?',
+            'answer': 'We accept Mobile Money payments through Paystack. You can pay using MTN Mobile Money, Vodafone Cash, or AirtelTigo Money.'
+        },
+        {
+            'question': 'How do I get the password for downloaded papers?',
+            'answer': 'After successful payment, the password is automatically sent to your mobile phone via SMS within minutes.'
+        },
+        {
+            'question': 'Are the papers downloadable?',
+            'answer': 'Yes! Once purchased, you can download the PDF files to your device for offline access.'
+        },
+        {
+            'question': 'Can I get a refund?',
+            'answer': 'Due to the digital nature of our products, we do not offer refunds once the paper has been downloaded. Please ensure you select the correct paper before purchasing.'
+        },
+        {
+            'question': 'How long do I have access to purchased papers?',
+            'answer': 'You have lifetime access to all papers you purchase. You can download them anytime from your purchase history.'
+        },
+        {
+            'question': 'Do you offer bulk discounts?',
+            'answer': 'Yes! Contact us directly for information about bulk purchases and institutional pricing.'
+        },
+    ]
+    
+    context = {
+        'page_title': 'Frequently Asked Questions',
+        'faqs': faqs
+    }
+    return render(request, 'shop/faq.html', context)
+
+
+def privacy_policy(request):
+    """Privacy policy page"""
+    context = {
+        'page_title': 'Privacy Policy',
+        'content': """
+        <h5>Information We Collect</h5>
+        <p>We collect information you provide directly to us, such as when you create an account, make a purchase, or contact us for support.</p>
+        
+        <h5>How We Use Your Information</h5>
+        <p>We use the information we collect to:</p>
+        <ul>
+            <li>Process your transactions and send you related information</li>
+            <li>Send you technical notices and support messages</li>
+            <li>Respond to your comments and questions</li>
+            <li>Improve our services</li>
+        </ul>
+        
+        <h5>Payment Information</h5>
+        <p>All payments are processed through Paystack. We do not store your credit card or mobile money details on our servers.</p>
+        
+        <h5>Data Security</h5>
+        <p>We implement reasonable security measures to protect your personal information from unauthorized access.</p>
+        
+        <h5>Contact Us</h5>
+        <p>If you have questions about this Privacy Policy, please contact us at darkosammy2@gmail.com</p>
+        """
+    }
+    return render(request, 'shop/privacy_policy.html', context)
+
+
+def terms_of_service(request):
+    """Terms of service page"""
+    context = {
+        'page_title': 'Terms of Service',
+        'content': """
+        <h5>Acceptance of Terms</h5>
+        <p>By accessing and using Insight Innovations, you accept and agree to be bound by these Terms of Service.</p>
+        
+        <h5>Service Description</h5>
+        <p>We provide digital educational resources including past examination papers. Some content is free, while other content requires payment.</p>
+        
+        <h5>User Accounts</h5>
+        <p>You are responsible for maintaining the confidentiality of your account and password. You agree to accept responsibility for all activities that occur under your account.</p>
+        
+        <h5>Payments and Refunds</h5>
+        <p>All payments are processed through Paystack. Due to the digital nature of our products, all sales are final and non-refundable.</p>
+        
+        <h5>Intellectual Property</h5>
+        <p>All content on this site is protected by copyright. You may not distribute, modify, or create derivative works without our permission.</p>
+        
+        <h5>Limitation of Liability</h5>
+        <p>Insight Innovations shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of our services.</p>
+        
+        <h5>Changes to Terms</h5>
+        <p>We reserve the right to modify these terms at any time. Continued use of the service constitutes acceptance of the modified terms.</p>
+        """
+    }
+    return render(request, 'shop/terms_of_service.html', context)
+
+
+# ====================================================================
+# SEARCH AND BROWSE VIEWS
+# ====================================================================
+
+def search_papers(request):
+    """Search papers across all categories"""
+    query = request.GET.get('q', '').strip()
+    papers = []
+    
+    if query:
+        papers = QuestionPaper.objects.filter(
+            models.Q(title__icontains=query) |
+            models.Q(subject__name__icontains=query) |
+            models.Q(class_level__name__icontains=query) |
+            models.Q(description__icontains=query),
+            is_available=True
+        ).select_related('class_level', 'term', 'subject').order_by('-created_at')[:50]
+    
+    context = {
+        'query': query,
+        'papers': papers,
+        'results_count': len(papers),
+        'page_title': f'Search Results for "{query}"' if query else 'Search Papers'
+    }
+    return render(request, 'shop/search_results.html', context)
+
+
+def all_papers(request):
+    """Display all papers across all categories"""
+    papers = QuestionPaper.objects.filter(
+        is_available=True
+    ).select_related('class_level', 'term', 'subject').order_by('-created_at')[:100]
+    
+    context = {
+        'papers': papers,
+        'page_title': 'All Question Papers',
+        'total_count': papers.count()
+    }
+    return render(request, 'shop/all_papers.html', context)
+
+
+def papers_by_year(request, year):
+    """Display papers by year"""
+    papers = QuestionPaper.objects.filter(
+        year=year,
+        is_available=True
+    ).select_related('class_level', 'term', 'subject').order_by('class_level__name', 'term__name')
+    
+    context = {
+        'year': year,
+        'papers': papers,
+        'page_title': f'Papers from {year}'
+    }
+    return render(request, 'shop/papers_by_year.html', context)
+
+
+def papers_by_type(request, exam_type):
+    """Display papers by exam type"""
+    # Map URL parameter to database value if needed
+    exam_type_map = {
+        'endterm': 'endterm',
+        'midterm': 'midterm',
+        'cat': 'cat',
+        'final': 'final',
+        'mock': 'mock',
+        'assignment': 'assignment',
+        'others': 'others'
+    }
+    
+    db_exam_type = exam_type_map.get(exam_type, exam_type)
+    
+    papers = QuestionPaper.objects.filter(
+        exam_type=db_exam_type,
+        is_available=True
+    ).select_related('class_level', 'term', 'subject')
+    
+    # Get display name for exam type
+    exam_type_choices = {
+        'endterm': 'End-Term Exam',
+        'midterm': 'Mid-Term Exam',
+        'cat': 'CAT (Continuous Assessment Test)',
+        'final': 'Final Exam',
+        'mock': 'Mock Exam',
+        'assignment': 'Assignment',
+        'others': 'Others'
+    }
+    
+    exam_type_display = exam_type_choices.get(db_exam_type, db_exam_type)
+    
+    context = {
+        'exam_type': exam_type,
+        'exam_type_display': exam_type_display,
+        'papers': papers,
+        'page_title': f'{exam_type_display} Papers'
+    }
+    return render(request, 'shop/papers_by_type.html', context)
+
+
+# ====================================================================
+# UTILITY VIEWS (Can be added later)
+# ====================================================================
+
+def download_subject_zip(request, class_slug, term_slug, subject_slug):
+    """Download all papers for a subject as ZIP file (placeholder)"""
+    return redirect('shop:subject_list', class_slug=class_slug, term_slug=term_slug)
+
+
+def payment_status(request, reference):
+    """Check payment status (placeholder)"""
+    try:
+        payment = Payment.objects.get(ref=reference)
+        context = {
+            'payment': payment,
+            'page_title': 'Payment Status'
+        }
+        return render(request, 'shop/payment_status.html', context)
+    except Payment.DoesNotExist:
+        return render(request, 'shop/error.html', {
+            'message': f'Payment reference {reference} not found.',
+            'page_title': 'Payment Not Found'
+        })
+
+
+# ====================================================================
+# SIMPLE TEMPLATE VIEWS (For missing templates)
+# ====================================================================
+
+def simple_template_view(request, template_name, page_title):
+    """Generic view for simple templates"""
+    return render(request, f'shop/{template_name}', {'page_title': page_title})
+    
     return render(request, 'shop/contact_us.html', context)
