@@ -17,32 +17,28 @@ import os
 # 1. HIERARCHICAL LIST VIEWS (Navigation)
 # ====================================================================
 
-# ... existing imports ...
 
-# ====================================================================
-# 1. HIERARCHICAL LIST VIEWS (Navigation)
-# ====================================================================
-
-# 1.1. Homepage: List all Classes/Grades
 def class_list(request):
-    classes = Classes.objects.annotate(
-        paper_count=models.Count('papers', filter=models.Q(papers__is_available=True))
-    ).order_by('order', 'name')
-    
+    """
+    Displays the top-level list of all available Classes (e.g., JHS 1).
+    This is the new homepage, aliased by the root URL '/'.
+    """
+    classes = Classes.objects.all()  # Remove .order_by('order', 'name')
     context = {
         'classes': classes,
         'page_title': 'Select Your Class/Grade',
         'is_homepage': True
     }
     return render(request, 'shop/class_list.html', context)
-    
-# 1.2. Second Level: List all Terms for a Class
+
 def term_list(request, class_slug):
+    """
+    Displays the list of terms (Term 1, 2, 3) available for the selected Class.
+    """
     class_level = get_object_or_404(Classes, slug=class_slug)
     
-    terms = Term.objects.filter(class_name=class_level).annotate(
-        paper_count=models.Count('papers', filter=models.Q(papers__is_available=True))
-    ).order_by('order', 'name')
+    # FIX APPLIED HERE: Used the correct related_name 'terms' defined in shop/models.py
+    terms = class_level.terms.all()  # Remove .order_by('order', 'name')
     
     context = {
         'class_level': class_level,
@@ -778,5 +774,5 @@ def payment_status(request, reference):
 def simple_template_view(request, template_name, page_title):
     """Generic view for simple templates"""
     return render(request, f'shop/{template_name}', {'page_title': page_title})
-    
+
     return render(request, 'shop/contact_us.html', context)
