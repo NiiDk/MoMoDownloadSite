@@ -12,10 +12,10 @@ urlpatterns = [
     # 1.1. Maps the required name 'buy_paper' to the conditional view
     path('buy/<slug:paper_slug>/', views.initiate_payment_or_download, name='buy_paper'),
     
-    # 1.2. NEW: The landing page for free downloads (used by paper_detail view)
+    # 1.2. The landing page for free downloads (used by paper_detail view)
     path('free-download/<slug:paper_slug>/', views.free_download_landing, name='download_page'),
     
-    # 1.3. NEW: The path for the actual file delivery (used by free_download_landing view)
+    # 1.3. The path for the actual file delivery (used by free_download_landing view)
     path('download-file/<slug:paper_slug>/', views.download_file, name='download_file'),
     
     # 1.4. /payment/callback/ - Handles user redirection from Paystack
@@ -30,11 +30,9 @@ urlpatterns = [
     path('login/', views.login, name='login'),
     path('logout/', views.logout, name='logout'),
     path('register/', views.register, name='register'),
-    
-    # NEW: Contact Us Page
     path('contact/', views.contact_us, name='contact_us'),
     
-    # 3. NEW STATIC PAGES (Add these)
+    # 3. NEW STATIC PAGES
     path('about/', views.about, name='about'),
     path('faq/', views.faq, name='faq'),
     path('privacy/', views.privacy_policy, name='privacy_policy'),
@@ -57,7 +55,14 @@ urlpatterns = [
     # 5.3. /<class_slug>/<term_slug>/ - Lists all Subjects for a Term
     path('<slug:class_slug>/<slug:term_slug>/', views.subject_list, name='subject_list'),
     
-    # 5.4. /<class_slug>/<term_slug>/<subject_slug>/<paper_slug>/ - Paper Detail/Product Page
+    # 5.4. NEW: /<class>/<term>/<subject>/list/ - LISTS MULTIPLE PAPERS
+    # This is the view name your template is calling when item.papers|length > 1 (Template Line 79)
+    path('<slug:class_slug>/<slug:term_slug>/<slug:subject_slug>/list/',
+         views.subject_papers_list,  # You must ensure this view function exists in views.py
+         name='subject_papers_list'), # <--- FIX: This name was missing!
+    
+    # 5.5. /<class_slug>/<term_slug>/<subject_slug>/<paper_slug>/ - Paper Detail/Product Page
+    # NOTE: This path MUST be placed after the '/list/' path above, or Django will mistake 'list' for a paper_slug.
     path('<slug:class_slug>/<slug:term_slug>/<slug:subject_slug>/<slug:paper_slug>/', 
          views.paper_detail, 
          name='paper_detail'),
