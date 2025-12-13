@@ -1,90 +1,16 @@
 {% extends 'base.html' %}
-
-{% block page_title %}{{ paper.title }}{% endblock %}
-
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card shadow border-0">
-            <div class="card-header bg-info text-white">
-                <h4 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Question Paper Details</h4>
-            </div>
-            <div class="card-body p-4">
-                <h2 class="card-title text-dark mb-4">{{ paper.title }}</h2>
-                
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="card bg-light mb-3">
-                            <div class="card-body">
-                                <h5 class="card-subtitle mb-2 text-muted">Class / Grade</h5>
-                                <p class="card-text fs-5 fw-bold text-primary">{{ paper.class_level.name }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card bg-light mb-3">
-                            <div class="card-body">
-                                <h5 class="card-subtitle mb-2 text-muted">Term</h5>
-                                <p class="card-text fs-5 fw-bold text-success">{{ paper.term.name }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card bg-light mb-4">
-                    <div class="card-body">
-                        <h5 class="card-subtitle mb-2 text-muted">Subject</h5>
-                        <p class="card-text fs-5 fw-bold text-dark">{{ paper.subject.name }}</p>
-                    </div>
-                </div>
-                
-                {% if paper.is_paid %}
-                    <div class="alert alert-warning alert-dismissible fade show">
-                        <h5 class="alert-heading"><i class="bi bi-shield-lock"></i> Secure PDF Access</h5>
-                        <p class="mb-0">This question paper is password-protected. After successful payment, the password will be sent instantly to your mobile phone via SMS.</p>
-                    </div>
-                {% else %}
-                    <div class="alert alert-success alert-dismissible fade show">
-                        <h5 class="alert-heading"><i class="bi bi-gift"></i> Free Download</h5>
-                        <p class="mb-0">This paper is a free resource. Click the button below to download instantly without payment.</p>
-                    </div>
-                {% endif %}
-
-
-                <div class="text-center mt-5 p-4 bg-light rounded">
-                    {% if paper.is_paid %}
-                        <h3 class="text-success mb-3">
-                            Price: <span class="display-6">{{ currency_code }} {{ paper.price }}</span>
-                        </h3>
-                    {% endif %}
-                    
-                    <div class="d-grid gap-2 d-md-block">
-                        <a href="{{ button_url }}"
-                            class="btn btn-primary btn-lg px-5 py-3">
-                            <i class="bi bi-lock-fill"></i> {{ button_text }}
-                        </a>
-                        <a href="{% url 'shop:subject_list' paper.class_level.slug paper.term.slug %}"
-                            class="btn btn-outline-secondary btn-lg mt-2 mt-md-0 ms-md-2">
-                            <i class="bi bi-arrow-left"></i> Back to Subjects
-                        </a>
-                    </div>
-                    
-                    {% if paper.is_paid %}
-                        <p class="text-muted small mt-3">{% extends 'base.html' %}
 {% load static %}
 
-{% block page_title %}{{ paper.title }}{% endblock %}
+{% block page_title %}{{ paper.title }} | Paper Detail{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-10">
         <div class="card shadow border-0">
-            <div class="card-header bg-gradient-primary text-white">
-                <h4 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Question Paper Details</h4>
+            <div class="card-header bg-gradient-primary text-info"> <h4 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Question Paper Details</h4>
             </div>
             <div class="card-body p-4">
                 
-                <!-- Header with Title -->
                 <div class="text-center mb-4">
                     <h1 class="card-title text-dark mb-2">{{ paper.title }}</h1>
                     <div class="text-muted">
@@ -93,32 +19,6 @@
                     </div>
                 </div>
                 
-                <!-- Paper Preview Section -->
-                {% if paper.preview_image %}
-                <div class="preview-section text-center mb-4">
-                    <div class="preview-container">
-                        <img src="{{ paper.generate_thumbnail|default:paper.get_preview_image_url }}" 
-                             alt="{{ paper.title }} Preview"
-                             class="img-fluid paper-preview rounded shadow"
-                             id="paperPreview">
-                        <div class="preview-overlay">
-                            <button class="btn btn-light btn-sm" onclick="enlargePreview()">
-                                <i class="bi bi-zoom-in"></i> Enlarge
-                            </button>
-                        </div>
-                    </div>
-                    <small class="text-muted">Preview image - Click to enlarge</small>
-                </div>
-                {% else %}
-                <div class="text-center mb-4">
-                    <div class="file-icon-display">
-                        <i class="bi bi-file-earmark-pdf" style="font-size: 5rem; color: #dc3545;"></i>
-                        <p class="text-muted mt-2">PDF Document Preview</p>
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Paper Info Cards -->
                 <div class="row mb-4">
                     <div class="col-md-3 col-sm-6 mb-3">
                         <div class="card h-100 border-primary">
@@ -158,11 +58,9 @@
                     </div>
                 </div>
                 
-                <!-- File Details & Description -->
                 <div class="row mb-4">
-                    <div class="col-md-8">
-                        {% if paper.description %}
-                        <div class="card mb-3">
+                    {% if paper.description %}
+                    <div class="col-md-12"> <div class="card mb-3">
                             <div class="card-header bg-light">
                                 <h5 class="mb-0"><i class="bi bi-card-text"></i> Description</h5>
                             </div>
@@ -170,10 +68,10 @@
                                 <p class="card-text">{{ paper.description }}</p>
                             </div>
                         </div>
-                        {% endif %}
                     </div>
-                    <div class="col-md-4">
-                        <div class="card">
+                    {% endif %}
+                    
+                    <div class="col-md-6 mx-auto"> <div class="card">
                             <div class="card-header bg-light">
                                 <h5 class="mb-0"><i class="bi bi-info-circle"></i> File Details</h5>
                             </div>
@@ -183,14 +81,12 @@
                                     <li class="mb-2"><i class="bi bi-file-text"></i> <strong>Pages:</strong> {{ paper.pages }}</li>
                                     <li class="mb-2"><i class="bi bi-hdd"></i> <strong>Size:</strong> {{ paper.file_size|default:"Calculating..." }}</li>
                                     <li class="mb-2"><i class="bi bi-calendar"></i> <strong>Year:</strong> {{ paper.year }}</li>
-                                    <li><i class="bi bi-database"></i> <strong>Storage:</strong> Cloudinary CDN</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Security Alert -->
                 {% if paper.is_paid %}
                 <div class="alert alert-warning alert-dismissible fade show mb-4">
                     <div class="d-flex">
@@ -220,7 +116,6 @@
                 </div>
                 {% endif %}
 
-                <!-- Pricing & Action Section -->
                 <div class="text-center mt-5 p-4 bg-light rounded border">
                     <div class="row align-items-center">
                         <div class="col-md-6 mb-3 mb-md-0">
@@ -242,7 +137,6 @@
                         <div class="col-md-6">
                             <div class="action-buttons">
                                 {% if paper.is_paid %}
-                                <!-- Purchase Button -->
                                 <a href="{{ button_url }}"
                                     class="btn btn-primary btn-lg px-5 py-3 w-100 mb-2">
                                     <i class="bi bi-lock-fill"></i> {{ button_text }}
@@ -251,22 +145,20 @@
                                     <i class="bi bi-arrow-right-circle"></i> Securely redirected to Paystack
                                 </p>
                                 {% else %}
-                                <!-- Free Download Button -->
-                                <a href="{{ paper.get_pdf_url }}"
+                                <a href="{{ paper.pdf_file.url }}"
                                     class="btn btn-success btn-lg px-5 py-3 w-100 mb-2"
                                     download="{{ paper.file_name }}"
                                     onclick="trackDownload('{{ paper.slug }}')">
                                     <i class="bi bi-download"></i> Download Now
                                 </a>
                                 <p class="text-muted small mb-0">
-                                    <i class="bi bi-cloud-arrow-down"></i> Securely delivered via Cloudinary
+                                    <i class="bi bi-check-circle"></i> File delivered securely
                                 </p>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Security Badges -->
                     <div class="row mt-4">
                         <div class="col-12">
                             <div class="d-flex flex-wrap justify-content-center gap-3">
@@ -279,15 +171,11 @@
                                 <span class="badge bg-warning">
                                     <i class="bi bi-phone"></i> SMS Password
                                 </span>
-                                <span class="badge bg-secondary">
-                                    <i class="bi bi-cloud"></i> Cloud Storage
-                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Back Button -->
                 <div class="text-center mt-4">
                     <a href="{% url 'shop:subject_list' paper.class_level.slug paper.term.slug %}"
                        class="btn btn-outline-secondary">
@@ -298,7 +186,6 @@
             </div>
         </div>
         
-        <!-- Related Papers Section -->
         {% if related_papers %}
         <div class="card shadow border-0 mt-4">
             <div class="card-header bg-light">
@@ -308,6 +195,7 @@
                 <div class="row">
                     {% for related in related_papers %}
                     <div class="col-md-4 mb-3">
+                        {# THIS IS CORRECT: The related paper is passed as the 'paper' variable #}
                         {% include 'shop/paper_card.html' with paper=related %}
                     </div>
                     {% endfor %}
@@ -319,24 +207,6 @@
     </div>
 </div>
 
-<!-- Preview Modal -->
-<div class="modal fade" id="previewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Preview: {{ paper.title }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body text-center">
-                {% if paper.preview_image %}
-                <img src="{{ paper.get_preview_image_url }}" 
-                     alt="{{ paper.title }} Full Preview"
-                     class="img-fluid rounded">
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -352,61 +222,9 @@ function trackDownload(slug) {
         body: JSON.stringify({})
     });
 }
-
-// Enlarge preview image
-function enlargePreview() {
-    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
-    previewModal.show();
-}
-
-// Auto-load the first preview image
-document.addEventListener('DOMContentLoaded', function() {
-    const previewImg = document.getElementById('paperPreview');
-    if (previewImg) {
-        previewImg.addEventListener('click', enlargePreview);
-    }
-});
 </script>
 
 <style>
-.preview-section {
-    position: relative;
-}
-
-.preview-container {
-    position: relative;
-    display: inline-block;
-}
-
-.paper-preview {
-    max-height: 300px;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-}
-
-.paper-preview:hover {
-    transform: scale(1.02);
-}
-
-.preview-overlay {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.preview-container:hover .preview-overlay {
-    opacity: 1;
-}
-
-.file-icon-display {
-    padding: 2rem;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border: 2px dashed #dee2e6;
-}
-
 .pricing-display {
     padding: 1.5rem;
     background: white;
@@ -431,13 +249,4 @@ document.addEventListener('DOMContentLoaded', function() {
     transform: translateY(-5px);
 }
 </style>
-{% endblock %}
-                            You'll be redirected to Paystack for secure Mobile Money payment
-                        </p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}

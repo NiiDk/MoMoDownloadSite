@@ -5,7 +5,6 @@
 
 {% block content %}
 <div class="container py-4">
-    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'shop:class_list' %}">Classes</a></li>
@@ -14,9 +13,8 @@
         </ol>
     </nav>
     
-    <!-- Header -->
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-header bg-gradient-info text-white">
+        <div class="card-header bg-gradient-teal text-white">
             <div class="d-flex flex-wrap justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-1">
@@ -38,14 +36,13 @@
                 </div>
             </div>
         </div>
-        <div class="card-body bg-light">
+        <div class="card-body bg-faded-black text-white">
             <p class="lead mb-0">
                 Select a subject to browse all available question papers for {{ term.name }}.
             </p>
         </div>
     </div>
     
-    <!-- Filter and Search -->
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="input-group">
@@ -68,13 +65,11 @@
         </div>
     </div>
     
-    <!-- Subjects Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="subjectsGrid">
         {% for item in subjects_list %}
             <div class="col subject-item" data-name="{{ item.subject.name|lower }}" data-papers="{{ item.papers|length }}">
                 <div class="card h-100 shadow-sm border-0 hover-lift">
                     <div class="card-body text-center p-4">
-                        <!-- Subject Icon -->
                         <div class="subject-icon mb-3">
                             <div class="icon-circle {% if item.papers|length > 0 %}bg-info{% else %}bg-secondary{% endif %}">
                                 {% if item.subject.icon %}
@@ -85,24 +80,20 @@
                             </div>
                         </div>
                         
-                        <!-- Subject Name -->
                         <h4 class="card-title text-dark fw-bold mb-2">{{ item.subject.name }}</h4>
                         
-                        <!-- Paper Count -->
                         <div class="mb-3">
                             <span class="badge {% if item.papers|length > 0 %}bg-success{% else %}bg-secondary{% endif %} rounded-pill fs-6 px-3 py-2">
                                 {{ item.papers|length }} Paper{{ item.papers|length|pluralize }}
                             </span>
                         </div>
                         
-                        <!-- Description -->
                         {% if item.subject.description %}
                             <p class="card-text text-muted small mb-3">
                                 {{ item.subject.description|truncatewords:20 }}
                             </p>
                         {% endif %}
                         
-                        <!-- Latest Paper Info -->
                         {% if item.papers|length > 0 %}
                             <div class="latest-paper mb-3">
                                 <small class="text-muted">
@@ -115,19 +106,18 @@
                             </div>
                         {% endif %}
                         
-                        <!-- Action Button -->
                         <div class="action-buttons">
                             {% if item.papers|length > 0 %}
                                 {% if item.papers|length == 1 %}
                                     {% with paper=item.papers.0 %}
                                         <a href="{% url 'shop:paper_detail' class_level.slug term.slug item.subject.slug paper.slug %}" 
-                                           class="btn btn-info btn-sm w-100">
+                                            class="btn btn-info btn-sm w-100">
                                             <i class="bi bi-eye me-1"></i> View Paper
                                         </a>
                                     {% endwith %}
                                 {% else %}
                                     <a href="{% url 'shop:subject_papers_list' class_level.slug term.slug item.subject.slug %}" 
-                                       class="btn btn-info btn-sm w-100">
+                                        class="btn btn-info btn-sm w-100">
                                         <i class="bi bi-list me-1"></i> Browse {{ item.papers|length }} Papers
                                     </a>
                                 {% endif %}
@@ -139,7 +129,6 @@
                         </div>
                     </div>
                     
-                    <!-- Footer with Additional Info -->
                     <div class="card-footer bg-transparent text-center pt-3 border-top-0">
                         <div class="d-flex justify-content-center gap-2">
                             {% if item.papers|length > 0 %}
@@ -178,14 +167,12 @@
         {% endfor %}
     </div>
     
-    <!-- No Results Message -->
     <div id="noSubjectsFound" class="alert alert-info text-center py-5 d-none">
         <i class="bi bi-search fa-3x text-info mb-3"></i>
         <h4>No Subjects Found</h4>
         <p class="mb-0">Try adjusting your search criteria.</p>
     </div>
     
-    <!-- Back Button -->
     <div class="text-center mt-4">
         <a href="{% url 'shop:term_list' class_level.slug %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-2"></i> Back to {{ class_level.name }} Terms
@@ -298,6 +285,30 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+/* --- NEW CUSTOM STYLES FOR TEAL/FADED BLACK THEME --- */
+.bg-gradient-teal {
+    /* Teal/Cyan gradient for the header */
+    background-color: #20c997 !important; /* Standard teal color fallback */
+    background-image: linear-gradient(135deg, #1abc9c 0%, #17a2b8 100%) !important; /* Teal to Cyan */
+}
+
+.bg-faded-black {
+    /* A deep faded black (dark grey) for the card body */
+    background-color: #343a40 !important; /* Bootstrap 'dark' color */
+}
+
+/* Ensure text on faded black background is white */
+.bg-faded-black.text-white {
+    color: #ffffff !important;
+}
+
+/* Adjust badges inside the new dark/teal header for better contrast */
+.card-header.bg-gradient-teal .badge.bg-light {
+    background-color: rgba(255, 255, 255, 0.8) !important; /* Slightly transparent white for contrast */
+    color: #212529 !important; /* Dark text on light badge */
+}
+/* --------------------------------------------------- */
+
 .hover-lift {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }

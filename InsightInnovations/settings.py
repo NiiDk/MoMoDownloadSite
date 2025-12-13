@@ -2,10 +2,7 @@
 
 from pathlib import Path
 from decouple import config 
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
-import os
+import os # Keep os imported
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -33,14 +30,16 @@ for host in additional_hosts:
         ALLOWED_HOSTS.append(host)
 
 # ====================================================================
-# CLOUDINARY CONFIGURATION (MUST BE BEFORE OTHER SETTINGS)
+# CLOUDINARY CONFIGURATION (REMOVED)
 # ====================================================================
 
-# Configure Cloudinary from CLOUDINARY_URL
-cloudinary.config(secure=True)
+# REMOVED: import cloudinary
+# REMOVED: import cloudinary.uploader
+# REMOVED: import cloudinary.api
+# REMOVED: cloudinary.config(secure=True)
 
 # ====================================================================
-# API KEYS
+# API KEYS (No change)
 # ====================================================================
 
 PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
@@ -49,7 +48,7 @@ ARKESEL_API_KEY = config('ARKESEL_API_KEY')
 CURRENCY_CODE = config('CURRENCY_CODE', default='GHS')
 
 # ====================================================================
-# EMAIL CONFIG
+# EMAIL CONFIG (No change)
 # ====================================================================
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -72,9 +71,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Cloudinary
-    'cloudinary',
-    'cloudinary_storage',
+    # Cloudinary (REMOVED)
+    # REMOVED: 'cloudinary',
+    # REMOVED: 'cloudinary_storage',
 
     # Custom app
     'shop',
@@ -113,7 +112,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'InsightInnovations.wsgi.application'
 
 # ====================================================================
-# DATABASE
+# DATABASE (No change)
 # ====================================================================
 
 DATABASES = {
@@ -124,7 +123,7 @@ DATABASES = {
 }
 
 # ====================================================================
-# PASSWORD VALIDATION
+# PASSWORD VALIDATION (No change)
 # ====================================================================
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -135,7 +134,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ====================================================================
-# INTERNATIONALIZATION
+# INTERNATIONALIZATION (No change)
 # ====================================================================
 
 LANGUAGE_CODE = 'en-us'
@@ -144,52 +143,49 @@ USE_I18N = True
 USE_TZ = True
 
 # ====================================================================
-# STATIC & MEDIA FILES
+# STATIC & MEDIA FILES (REVISED: Added MEDIA_URL/ROOT for local serving)
 # ====================================================================
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']  # Add this if you have a static folder
 
+# --- Media Settings for Local File Storage ---
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+# -------------------------------------------
+
 # -----------------------------
-# 🔥 STORAGE CONFIGURATION
+# 🔥 STORAGE CONFIGURATION (REVISED for Local Storage)
 # -----------------------------
 
 # Django 4.2+ way (recommended)
 STORAGES = {
     "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        # Changed BACKEND to use standard Django File System Storage
+        "BACKEND": "django.core.files.storage.FileSystemStorage", 
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
-# Legacy way (compatible with older Django)
-# MEDIA_URL = '/media/'
-# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Legacy way (compatible with older Django) - REMOVED
+# REMOVED: MEDIA_URL = '/media/'
+# REMOVED: DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# REMOVED: STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Optional Cloudinary settings
-CLOUDINARY_STORAGE = {
-    # This helps avoid overwriting files with same name
-    'overwrite': False,
-    # You can specify a default folder for uploads
-    # 'default_folder': 'InsightInnovations/media',
-    # Resource type settings
-    'resource_type': 'auto',
-    # Validation
-    'validate_filename': True,
-}
+# Optional Cloudinary settings (REMOVED)
+# REMOVED: CLOUDINARY_STORAGE = { ... }
 
 # ====================================================================
-# DEFAULT PK
+# DEFAULT PK (No change)
 # ====================================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ====================================================================
-# SECURITY SETTINGS (FOR PRODUCTION)
+# SECURITY SETTINGS (FOR PRODUCTION) (No change)
 # ====================================================================
 
 if not DEBUG:

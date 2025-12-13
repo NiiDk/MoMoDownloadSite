@@ -5,7 +5,6 @@
 
 {% block content %}
 <div class="container py-4">
-    <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'shop:class_list' %}">Classes</a></li>
@@ -15,9 +14,8 @@
         </ol>
     </nav>
     
-    <!-- Header -->
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-header bg-gradient-info text-white">
+        <div class="card-header custom-green-header text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h2 class="mb-1">
@@ -35,17 +33,15 @@
                 </div>
             </div>
         </div>
-        <div class="card-body bg-light">
+        <div class="card-body custom-deep-black-body text-light">
             <p class="lead mb-0">
                 Browse all available question papers for {{ subject.name }} in {{ term.name }}.
-                {% if subject.description %}<br><small class="text-muted">{{ subject.description }}</small>{% endif %}
+                {% if subject.description %}<br><small class="text-white-50">{{ subject.description }}</small>{% endif %}
             </p>
         </div>
     </div>
     
-    <!-- Papers Grid -->
     {% if papers %}
-        <!-- Search & Filter (Optional) -->
         <div class="card mb-4 shadow-sm">
             <div class="card-body">
                 <div class="row align-items-center">
@@ -86,18 +82,16 @@
             </div>
         </div>
         
-        <!-- Papers Grid -->
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="papersGrid">
             {% for paper in papers %}
             <div class="col" data-price="{{ paper.price }}" data-paid="{{ paper.is_paid|lower }}" data-views="{{ paper.views }}" data-date="{{ paper.created_at|date:'Y-m-d' }}">
                 <div class="card h-100 shadow-sm border-0 paper-card">
-                    <!-- Paper Preview -->
                     <div class="paper-preview position-relative">
                         {% if paper.preview_image %}
                         <img src="{% if paper.generate_thumbnail %}{{ paper.generate_thumbnail }}{% else %}{{ paper.get_preview_image_url }}{% endif %}" 
-                             class="card-img-top" 
-                             alt="{{ paper.title }} Preview"
-                             style="height: 180px; object-fit: cover; border-bottom: 1px solid #dee2e6;">
+                            class="card-img-top" 
+                            alt="{{ paper.title }} Preview"
+                            style="height: 180px; object-fit: cover; border-bottom: 1px solid #dee2e6;">
                         <div class="preview-badge">
                             <span class="badge bg-dark bg-opacity-75">
                                 <i class="bi bi-filetype-pdf"></i> PDF
@@ -105,7 +99,7 @@
                         </div>
                         {% else %}
                         <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
-                             style="height: 180px; border-bottom: 1px solid #dee2e6;">
+                            style="height: 180px; border-bottom: 1px solid #dee2e6;">
                             <div class="text-center">
                                 <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 3rem;"></i>
                                 <p class="text-muted small mt-2">PDF Document</p>
@@ -113,7 +107,6 @@
                         </div>
                         {% endif %}
                         
-                        <!-- Price Badge -->
                         <div class="position-absolute top-0 end-0 m-2">
                             {% if paper.is_paid %}
                             <span class="badge bg-warning text-dark fs-6 p-2 shadow">
@@ -132,7 +125,6 @@
                             {{ paper.title }}
                         </h5>
                         
-                        <!-- Paper Meta -->
                         <div class="paper-meta mb-3">
                             <div class="d-flex flex-wrap gap-1 mb-2">
                                 <span class="badge bg-secondary">{{ paper.year }}</span>
@@ -145,7 +137,6 @@
                                 </span>
                             </div>
                             
-                            <!-- File Info -->
                             <div class="file-info small text-muted mb-2">
                                 <div class="d-flex justify-content-between">
                                     <span>
@@ -157,7 +148,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Cloudinary Badge -->
                             <div class="cloudinary-badge">
                                 <small class="text-muted">
                                     <i class="bi bi-cloud-check"></i> Stored on Cloudinary
@@ -165,13 +155,12 @@
                             </div>
                         </div>
                         
-                        <!-- Quick Actions -->
                         <div class="quick-actions">
                             {% if not paper.is_paid %}
                             <a href="{{ paper.get_pdf_url }}" 
-                               class="btn btn-success btn-sm w-100 mb-2"
-                               download="{{ paper.file_name }}"
-                               onclick="trackDownload('{{ paper.slug }}')">
+                                class="btn btn-success btn-sm w-100 mb-2"
+                                download="{{ paper.file_name }}"
+                                onclick="trackDownload('{{ paper.slug }}')">
                                 <i class="bi bi-download"></i> Download Free
                             </a>
                             {% endif %}
@@ -181,7 +170,7 @@
                     <div class="card-footer bg-transparent border-top-0">
                         <div class="d-grid">
                             <a href="{% url 'shop:paper_detail' class_level.slug term.slug subject.slug paper.slug %}" 
-                               class="btn btn-outline-info btn-sm">
+                                class="btn btn-outline-info btn-sm">
                                 <i class="bi bi-eye me-1"></i> View Details
                             </a>
                         </div>
@@ -191,7 +180,6 @@
             {% endfor %}
         </div>
         
-        <!-- No results message (hidden by default) -->
         <div id="noResults" class="alert alert-warning text-center py-5 d-none">
             <div class="py-4">
                 <i class="bi bi-search fa-3x text-warning mb-3"></i>
@@ -201,7 +189,6 @@
         </div>
         
     {% else %}
-        <!-- No papers message -->
         <div class="alert alert-warning text-center py-5">
             <div class="py-4">
                 <i class="bi bi-exclamation-triangle fa-3x text-warning mb-3"></i>
@@ -209,13 +196,13 @@
                 <p class="lead">There are currently no question papers available for {{ subject.name }} in {{ term.name }}.</p>
                 <div class="mt-3">
                     <a href="{% url 'shop:subject_list' class_level.slug term.slug %}" 
-                       class="btn btn-outline-warning">
+                        class="btn btn-outline-warning">
                         <i class="bi bi-arrow-left me-1"></i> Back to Subjects
                     </a>
                     {% if user.is_staff %}
                     <a href="{% url 'admin:shop_questionpaper_add' %}" 
-                       target="_blank" 
-                       class="btn btn-warning ms-2">
+                        target="_blank" 
+                        class="btn btn-warning ms-2">
                         <i class="bi bi-plus me-1"></i> Add Paper (Admin)
                     </a>
                     {% endif %}
@@ -224,10 +211,9 @@
         </div>
     {% endif %}
     
-    <!-- Back Button -->
     <div class="mt-4 text-center">
         <a href="{% url 'shop:subject_list' class_level.slug term.slug %}" 
-           class="btn btn-outline-secondary">
+            class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Back to All Subjects
         </a>
     </div>
@@ -248,103 +234,124 @@ function trackDownload(slug) {
     });
 }
 
-// Search and Filter functionality
+// Search, Filter, and Sort functionality
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchPapers');
     const papersGrid = document.getElementById('papersGrid');
     const noResults = document.getElementById('noResults');
-    const paperCards = papersGrid ? papersGrid.querySelectorAll('.col') : [];
+    const paperCards = papersGrid ? Array.from(papersGrid.querySelectorAll('.col')) : [];
+    const filterButtons = document.querySelectorAll('[data-filter]');
+    const sortButtons = document.querySelectorAll('[data-sort]');
     
-    // Search functionality
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            let visibleCount = 0;
+    let currentFilter = 'all';
+    let currentSort = 'newest';
+
+    // Function to apply search, filter, and sort
+    function updateGrid() {
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        let visibleCards = 0;
+        
+        // 1. Filtering and Searching
+        paperCards.forEach(card => {
+            const title = card.querySelector('.card-title').textContent.toLowerCase();
+            const description = card.querySelector('.card-text') ? 
+                card.querySelector('.card-text').textContent.toLowerCase() : '';
+            const isPaid = card.getAttribute('data-paid');
+
+            const passesFilter = (
+                currentFilter === 'all' ||
+                (currentFilter === 'paid' && isPaid === 'true') ||
+                (currentFilter === 'free' && isPaid === 'false')
+            );
             
-            paperCards.forEach(card => {
-                const title = card.querySelector('.card-title').textContent.toLowerCase();
-                const description = card.querySelector('.card-text') ? 
-                    card.querySelector('.card-text').textContent.toLowerCase() : '';
-                
-                if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            
-            // Show/hide no results message
-            if (noResults) {
-                if (visibleCount === 0 && searchTerm !== '') {
-                    noResults.classList.remove('d-none');
-                    papersGrid.classList.add('d-none');
-                } else {
-                    noResults.classList.add('d-none');
-                    papersGrid.classList.remove('d-none');
-                }
+            const passesSearch = title.includes(searchTerm) || description.includes(searchTerm);
+
+            if (passesFilter && passesSearch) {
+                card.style.display = 'block';
+                visibleCards++;
+            } else {
+                card.style.display = 'none';
             }
         });
+
+        // 2. Sorting (Sorts only the visible items currently in the DOM)
+        const visibleCardsArray = paperCards.filter(card => card.style.display !== 'none');
+
+        visibleCardsArray.sort((a, b) => {
+            switch(currentSort) {
+                case 'newest':
+                    return new Date(b.getAttribute('data-date')) - new Date(a.getAttribute('data-date'));
+                case 'oldest':
+                    return new Date(a.getAttribute('data-date')) - new Date(b.getAttribute('data-date'));
+                case 'price-low':
+                    return parseFloat(a.getAttribute('data-price')) - parseFloat(b.getAttribute('data-price'));
+                case 'price-high':
+                    return parseFloat(b.getAttribute('data-price')) - parseFloat(a.getAttribute('data-price'));
+                case 'popular':
+                    return parseInt(b.getAttribute('data-views')) - parseInt(a.getAttribute('data-views'));
+                default:
+                    return 0;
+            }
+        });
+
+        // Reorder the grid
+        visibleCardsArray.forEach(card => {
+            papersGrid.appendChild(card);
+        });
+
+        // 3. Show/hide no results message
+        if (noResults) {
+            if (visibleCards === 0) {
+                noResults.classList.remove('d-none');
+                papersGrid.classList.add('d-none');
+            } else {
+                noResults.classList.add('d-none');
+                papersGrid.classList.remove('d-none');
+            }
+        }
+    }
+
+    // --- Event Listeners and Initialization ---
+
+    // Initialize Sort to Newest First
+    if (paperCards.length > 0) {
+        // Apply initial sort (ensuring it's applied correctly on load)
+        paperCards.sort((a, b) => new Date(b.getAttribute('data-date')) - new Date(a.getAttribute('data-date')));
+        paperCards.forEach(card => { papersGrid.appendChild(card); });
+        // Mark the default 'Newest First' as active (assuming you add a default active class)
+        // document.querySelector('[data-sort="newest"]').classList.add('active-sort');
+    }
+
+    // Search functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', updateGrid);
     }
     
     // Filter functionality
-    document.querySelectorAll('[data-filter]').forEach(button => {
+    filterButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            const filterType = this.getAttribute('data-filter');
-            let visibleCount = 0;
-            
-            paperCards.forEach(card => {
-                const isPaid = card.getAttribute('data-paid');
-                
-                if (filterType === 'all' || 
-                    (filterType === 'paid' && isPaid === 'true') ||
-                    (filterType === 'free' && isPaid === 'false')) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
+            currentFilter = this.getAttribute('data-filter');
             
             // Update filter button text
-            document.querySelector('[data-bs-toggle="dropdown"]').innerHTML = 
+            document.querySelector('.dropdown button[data-bs-toggle="dropdown"]').innerHTML = 
                 `<i class="bi bi-funnel"></i> ${this.textContent}`;
+
+            updateGrid();
         });
     });
     
     // Sort functionality
-    document.querySelectorAll('[data-sort]').forEach(button => {
+    sortButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            const sortType = this.getAttribute('data-sort');
-            const cardsArray = Array.from(paperCards);
+            currentSort = this.getAttribute('data-sort');
             
-            cardsArray.sort((a, b) => {
-                switch(sortType) {
-                    case 'newest':
-                        return new Date(b.getAttribute('data-date')) - new Date(a.getAttribute('data-date'));
-                    case 'oldest':
-                        return new Date(a.getAttribute('data-date')) - new Date(b.getAttribute('data-date'));
-                    case 'price-low':
-                        return parseFloat(a.getAttribute('data-price')) - parseFloat(b.getAttribute('data-price'));
-                    case 'price-high':
-                        return parseFloat(b.getAttribute('data-price')) - parseFloat(a.getAttribute('data-price'));
-                    case 'popular':
-                        return parseInt(b.getAttribute('data-views')) - parseInt(a.getAttribute('data-views'));
-                    default:
-                        return 0;
-                }
-            });
-            
-            // Reorder the grid
-            cardsArray.forEach(card => {
-                papersGrid.appendChild(card);
-            });
-            
-            // Update sort button text
-            document.querySelectorAll('[data-bs-toggle="dropdown"]')[1].innerHTML = 
+            // Update sort button text (Targeting the second dropdown button)
+            document.querySelectorAll('.dropdown button[data-bs-toggle="dropdown"]')[1].innerHTML = 
                 `<i class="bi bi-sort-down"></i> ${this.textContent}`;
+            
+            updateGrid();
         });
     });
     
@@ -363,6 +370,23 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+/* Custom Styles for Header and Body colors */
+
+/* Green Header - Used on the element with class .custom-green-header */
+.custom-green-header {
+    background-color: #28a745 !important; /* Bootstrap Success Green */
+    color: #ffffff !important; /* White text for contrast */
+    border-bottom: 1px solid #1e7e34; /* Darker green border */
+}
+
+/* Deep Black Body - Used on the element with class .custom-deep-black-body */
+.custom-deep-black-body {
+    background-color: #000000 !important; /* True Black */
+    color: #f8f9fa !important; /* Light text for readability */
+}
+
+
+/* --- Existing styles remain below --- */
 .paper-card {
     transition: all 0.3s ease;
     border: 1px solid #e9ecef;
@@ -384,7 +408,8 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .file-info {
-    background: #f8f9fa;
+    /* Keeping file info light for contrast against overall page background */
+    background: #f8f9fa; 
     padding: 8px;
     border-radius: 4px;
 }

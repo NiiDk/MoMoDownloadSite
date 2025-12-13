@@ -2,9 +2,9 @@
 
 from django.db import models
 from django.urls import reverse
-import uuid
 from django.utils import timezone
-from cloudinary.models import CloudinaryField  # Add CloudinaryField
+from django.utils.text import slugify
+import uuid
 
 # --- 1. Class (Grade) Model ---
 class Classes(models.Model):
@@ -64,7 +64,7 @@ class Subject(models.Model):
         return self.papers.count()
 
 
-# --- 4. QuestionPaper Model (UPDATED WITH CLOUDINARY) ---
+# --- 4. QuestionPaper Model (FINALIZED) ---
 class QuestionPaper(models.Model):
     # Core Information
     title = models.CharField(max_length=200)
@@ -97,43 +97,29 @@ class QuestionPaper(models.Model):
         default='endterm'
     )
     
-    # File and pricing - UPDATED WITH CLOUDINARY
+    # File and pricing
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    # Replace FileField with CloudinaryField
-    pdf_file = CloudinaryField(
-        'raw',  # 'raw' for PDF files
-        folder='question_papers/',  # Organize in Cloudinary folder
-        resource_type='raw',  # Explicitly set to raw for PDFs
+    pdf_file = models.FileField(
+        upload_to='question_papers/', 
+        max_length=500, 
         blank=False,
         null=False,
         help_text="Upload PDF question paper"
     )
-    password = models.CharField(max_length=50, blank=True)  # Made optional
+    password = models.CharField(max_length=50, blank=True)
     
     # Status flags
     is_paid = models.BooleanField(default=True, help_text="Is this a paid paper or a free sample?")
     is_available = models.BooleanField(default=True, help_text="Is this paper available for purchase?")
     
-    # File information - Cloudinary provides this automatically
+    # File information
     file_size = models.CharField(max_length=20, blank=True, editable=False)
     pages = models.IntegerField(default=1, help_text="Number of pages")
-    
-    # Preview image (optional) - USING CLOUDINARY
-    preview_image = CloudinaryField(
-        'image',
-        folder='question_paper_previews/',
-        null=True,
-        blank=True,
-        help_text="Preview/sample image of the question paper"
-    )
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     views = models.IntegerField(default=0, help_text="Number of times viewed")
-    
-    # Cloudinary public ID for easy reference
-    cloudinary_public_id = models.CharField(max_length=300, blank=True, editable=False)
     
     class Meta:
         ordering = ('class_level', 'term', 'subject', 'title')
@@ -151,9 +137,6 @@ class QuestionPaper(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate slug if not provided
         if not self.slug or self.slug == str(uuid.uuid4()):
-            import re
-            from django.utils.text import slugify
-            
             base_slug = slugify(f"{self.class_level.name} {self.term.name} {self.subject.name} {self.title}")
             self.slug = base_slug
             counter = 1
@@ -161,27 +144,21 @@ class QuestionPaper(models.Model):
                 self.slug = f"{base_slug}-{counter}"
                 counter += 1
         
-        # Store Cloudinary public ID if available
-        if self.pdf_file and hasattr(self.pdf_file, 'public_id'):
-            self.cloudinary_public_id = self.pdf_file.public_id
-        
         # Set default password if not provided
         if not self.password and self.is_paid:
             self.password = f"INSIGHT_{uuid.uuid4().hex[:8].upper()}"
         
-        # Update file size for Cloudinary (if we want to track it)
+        # Update file size 
         if self.pdf_file and not self.file_size:
             try:
-                # Cloudinary stores file size in bytes
-                if hasattr(self.pdf_file, 'metadata') and 'bytes' in self.pdf_file.metadata:
-                    size_bytes = self.pdf_file.metadata['bytes']
-                    if size_bytes < 1024:
-                        self.file_size = f"{size_bytes} B"
-                    elif size_bytes < 1024 * 1024:
-                        self.file_size = f"{size_bytes / 1024:.1f} KB"
-                    else:
-                        self.file_size = f"{size_bytes / (1024 * 1024):.1f} MB"
-            except:
+                size_bytes = self.pdf_file.size
+                if size_bytes < 1024:
+                    self.file_size = f"{size_bytes} B"
+                elif size_bytes < 1024 * 1024:
+                    self.file_size = f"{size_bytes / 1024:.1f} KB"
+                else:
+                    self.file_size = f"{size_bytes / (1024 * 1024):.1f} MB"
+            except Exception:
                 pass
         
         super().save(*args, **kwargs)
@@ -199,153 +176,100 @@ class QuestionPaper(models.Model):
     def get_display_title(self):
         return self.title
     
-    # Cloudinary-specific methods
+    # Storage related methods (Updated for local storage)
     def get_pdf_url(self):
-        """Get Cloudinary URL for the PDF file"""
         if self.pdf_file:
             return self.pdf_file.url
         return None
     
     def get_secure_pdf_url(self):
-        """Get secure Cloudinary URL for the PDF"""
-        if self.pdf_file:
-            # Force HTTPS and add security transformations if needed
-            return str(self.pdf_file.url).replace('http://', 'https://')
-        return None
+        return self.get_pdf_url()
     
     def get_preview_image_url(self):
-        """Get preview image URL with transformations"""
-        if self.preview_image:
-            return self.preview_image.url
+        # Method stub removed for consistency
         return None
     
     def generate_thumbnail(self, width=300, height=400):
-        """Generate a thumbnail URL from preview image"""
-        if self.preview_image:
-            from cloudinary import CloudinaryImage
-            img = CloudinaryImage(self.preview_image.public_id)
-            return img.build_url(width=width, height=height, crop="fill")
+        # Method stub removed for consistency
         return None
     
     @property
     def file_name(self):
-        """Extract file name from Cloudinary URL"""
-        if self.pdf_file and hasattr(self.pdf_file, 'public_id'):
-            return self.pdf_file.public_id.split('/')[-1]
+        if self.pdf_file:
+            return self.pdf_file.name.split('/')[-1]
         return "question_paper.pdf"
     
     @property
     def is_free(self):
-        """Check if paper is free"""
         return self.price == 0 or not self.is_paid
 
 
-# --- 5. Payment Model ---
+# --- 5. Payment Model (Restored Fields) ---
 class Payment(models.Model):
-    question_paper = models.ForeignKey(QuestionPaper, on_delete=models.CASCADE)
+    # Core fields
+    ref = models.CharField(max_length=20, unique=True)
+    question_paper = models.ForeignKey(QuestionPaper, related_name='payments', on_delete=models.PROTECT)
     email = models.EmailField()
-    phone_number = models.CharField(max_length=20)
-    ref = models.CharField(max_length=200, unique=True, default=uuid.uuid4)
+    phone_number = models.CharField(max_length=20, blank=True)
+    
+    # Financial fields
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    payment_method = models.CharField(max_length=50, default='paystack')
+    transaction_id = models.CharField(max_length=100, blank=True)
+    
+    # Status
     verified = models.BooleanField(default=False)
+    
+    # Metadata
     date_created = models.DateTimeField(auto_now_add=True)
     
-    # Payment details
-    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    payment_method = models.CharField(max_length=50, blank=True, default='paystack')
-    transaction_id = models.CharField(max_length=200, blank=True)
+    # Methods (to support admin functions)
+    def amount_in_pesewas(self):
+        # Placeholder based on admin code referencing it
+        # Assuming price from paper if amount_paid is null
+        price = self.amount_paid if self.amount_paid is not None else self.question_paper.price
+        return int(price * 100) if price is not None else 0
+
+    def __str__(self):
+        return f"Payment #{self.ref} - {self.email}"
     
     class Meta:
         ordering = ('-date_created',)
-        verbose_name = 'Payment'
-        verbose_name_plural = 'Payments'
-        indexes = [
-            models.Index(fields=['ref']),
-            models.Index(fields=['email', 'verified']),
-        ]
 
-    def amount_in_pesewas(self):
-        return int(self.question_paper.price * 100)
+
+# --- 6. Paper Download History (Restored Fields) ---
+class DownloadHistory(models.Model):
+    # Core fields
+    paper = models.ForeignKey(QuestionPaper, related_name='downloads', on_delete=models.CASCADE)
+    payment = models.ForeignKey(Payment, related_name='downloads', on_delete=models.SET_NULL, null=True, blank=True)
+    user_email = models.EmailField(blank=True, null=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    
+    # Metadata
+    downloaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Payment for {self.question_paper.title} - Verified: {self.verified}"
-    
-    def mark_as_verified(self, transaction_id=None, amount=None):
-        """Mark payment as verified"""
-        self.verified = True
-        if transaction_id:
-            self.transaction_id = transaction_id
-        if amount:
-            self.amount_paid = amount
-        self.save()
-    
-    @property
-    def download_url(self):
-        """Get download URL after payment verification"""
-        if self.verified and self.question_paper.pdf_file:
-            return self.question_paper.get_pdf_url()
-        return None
-
-
-# --- 6. Paper Download History ---
-class DownloadHistory(models.Model):
-    paper = models.ForeignKey(QuestionPaper, on_delete=models.CASCADE, related_name='downloads')
-    user_email = models.EmailField()
-    downloaded_at = models.DateTimeField(auto_now_add=True)
-    ip_address = models.GenericIPAddressField(blank=True, null=True)
-    payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name='downloads')
-    user_agent = models.TextField(blank=True)  # Browser info
+        return f"Download of {self.paper.title} by {self.user_email or 'Anonymous'}"
     
     class Meta:
-        ordering = ('-downloaded_at',)
-        verbose_name = 'Download History'
         verbose_name_plural = 'Download Histories'
-        indexes = [
-            models.Index(fields=['paper', 'downloaded_at']),
-            models.Index(fields=['user_email']),
-        ]
-    
-    def __str__(self):
-        return f"{self.user_email} downloaded {self.paper.title}"
-    
-    @classmethod
-    def log_download(cls, paper, email, request=None, payment=None):
-        """Helper method to log a download"""
-        download = cls(
-            paper=paper,
-            user_email=email,
-            payment=payment
-        )
-        
-        if request:
-            download.ip_address = request.META.get('REMOTE_ADDR')
-            download.user_agent = request.META.get('HTTP_USER_AGENT', '')
-        
-        download.save()
-        return download
+        ordering = ('-downloaded_at',)
 
 
-# --- 7. FREE SAMPLE Model (Optional but recommended) ---
+# --- 7. FREE SAMPLE Model (Restored Fields) ---
 class FreeSample(models.Model):
-    """Free samples to attract customers"""
-    question_paper = models.ForeignKey(QuestionPaper, on_delete=models.CASCADE, limit_choices_to={'is_paid': True})
-    sample_pdf = CloudinaryField(
-        'raw',
-        folder='free_samples/',
-        resource_type='raw',
-        help_text="Sample PDF (first few pages only)"
-    )
-    description = models.TextField(help_text="What's included in this sample")
+    # Core fields
+    question_paper = models.OneToOneField(QuestionPaper, related_name='free_sample', on_delete=models.CASCADE)
+    description = models.TextField(blank=True)
+    sample_pdf = models.FileField(upload_to='free_samples/', blank=True, null=True)
     downloads = models.IntegerField(default=0)
+    
+    # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     
-    class Meta:
-        verbose_name = 'Free Sample'
-        verbose_name_plural = 'Free Samples'
-        ordering = ('-created_at',)
-    
     def __str__(self):
-        return f"Free sample of {self.question_paper.title}"
+        return f"Free Sample for {self.question_paper.title}"
     
-    def increment_downloads(self):
-        self.downloads += 1
-        self.save(update_fields=['downloads'])
+    class Meta:
+        ordering = ('-created_at',)

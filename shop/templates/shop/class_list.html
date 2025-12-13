@@ -5,7 +5,6 @@
 
 {% block content %}
 <div class="container py-5">
-    <!-- Hero Section -->
     <div class="text-center mb-5">
         <div class="mb-4">
             <i class="bi bi-mortarboard-fill text-primary" style="font-size: 4rem;"></i>
@@ -14,10 +13,9 @@
             Available Academic Levels
         </h1>
         <p class="lead text-muted mx-auto" style="max-width: 600px;">
-            Choose your class to access thousands of question papers securely stored on Cloudinary
+            Choose your class to access thousands of secure question papers.
         </p>
         
-        <!-- Stats -->
         <div class="row justify-content-center mt-4">
             <div class="col-md-8">
                 <div class="d-flex flex-wrap justify-content-center gap-4">
@@ -38,16 +36,17 @@
         </div>
     </div>
     
-    <!-- Classes Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
         {% for class_obj in classes %}
             <div class="col">
                 <a href="{% url 'shop:term_list' class_obj.slug %}" class="text-decoration-none card-link">
                     <div class="card class-card h-100 shadow border-0 hover-lift">
-                        <div class="card-header bg-gradient-primary text-white position-relative">
+                        {# CHANGED: Replaced bg-gradient-primary with bg-teal-gradient #}
+                        <div class="card-header bg-teal-gradient text-white position-relative">
                             <div class="class-icon">
                                 <i class="bi bi-backpack" style="font-size: 2.5rem;"></i>
                             </div>
+                            {# SIMPLIFIED: Removed text-primary as parent uses text-white #}
                             <h4 class="card-title mb-0 fw-bold">{{ class_obj.name }}</h4>
                         </div>
                         <div class="card-body p-4">
@@ -55,7 +54,6 @@
                                 {{ class_obj.description|default:"Access Term 1, Term 2, and Term 3 question papers for this academic level." }}
                             </p>
                             
-                            <!-- Class Stats -->
                             <div class="class-stats mb-3">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted small">
@@ -75,13 +73,7 @@
                                 </div>
                             </div>
                             
-                            <!-- Cloudinary Storage Badge -->
-                            <div class="cloudinary-badge mt-3">
-                                <span class="badge bg-light text-dark small">
-                                    <i class="bi bi-cloud-check"></i> Secured on Cloudinary
-                                </span>
                             </div>
-                        </div>
                         <div class="card-footer bg-transparent border-top-0 text-center">
                             <span class="btn btn-primary btn-sm px-4">
                                 <i class="bi bi-arrow-right-circle me-1"></i> Browse Papers
@@ -108,7 +100,6 @@
         {% endfor %}
     </div>
     
-    <!-- Features Section -->
     <div class="row justify-content-center mt-5 mb-5">
         <div class="col-lg-10">
             <div class="card bg-light border-0 shadow-sm">
@@ -119,10 +110,10 @@
                     <div class="row g-4">
                         <div class="col-md-4 text-center">
                             <div class="feature-icon mb-3">
-                                <i class="bi bi-cloud-arrow-up text-info" style="font-size: 2.5rem;"></i>
+                                <i class="bi bi-hdd-fill text-info" style="font-size: 2.5rem;"></i>
                             </div>
-                            <h5>Cloudinary Storage</h5>
-                            <p class="text-muted small">All papers securely stored on Cloudinary CDN for fast, reliable downloads</p>
+                            <h5>Secure File Hosting</h5>
+                            <p class="text-muted small">All papers are securely hosted for fast, reliable downloads.</p>
                         </div>
                         <div class="col-md-4 text-center">
                             <div class="feature-icon mb-3">
@@ -144,57 +135,21 @@
         </div>
     </div>
     
-    <!-- Contact Section -->
-    <div class="row justify-content-center mt-5">
-        <div class="col-lg-10">
-            <div class="card bg-gradient-info text-white shadow-lg border-0">
-                <div class="card-body p-4 p-md-5">
-                    <div class="row align-items-center">
-                        <div class="col-md-7">
-                            <h2 class="card-title mb-3">
-                                <i class="bi bi-question-circle me-2"></i> Need Assistance?
-                            </h2>
-                            <p class="lead mb-4">
-                                Our support team is ready to help with purchases, technical issues, or feedback.
-                            </p>
-                            <a href="{% url 'shop:contact_us' %}" class="btn btn-warning btn-lg fw-bold text-dark">
-                                <i class="bi bi-envelope me-2"></i> Contact Support
-                            </a>
-                        </div>
-                        <div class="col-md-5 mt-4 mt-md-0">
-                            <div class="contact-methods">
-                                <h5 class="mb-3">Direct Contact:</h5>
-                                <div class="contact-icons d-flex gap-3 mb-3">
-                                    <a href="tel:+233542232515" class="text-white contact-icon" title="Call Us">
-                                        <i class="bi bi-telephone fs-3"></i>
-                                        <span class="d-block small mt-1">Call</span>
-                                    </a>
-                                    <a href="https://wa.me/233542232515" target="_blank" class="text-white contact-icon" title="WhatsApp">
-                                        <i class="bi bi-whatsapp fs-3"></i>
-                                        <span class="d-block small mt-1">WhatsApp</span>
-                                    </a>
-                                    <a href="mailto:darkosammy2@gmail.com" class="text-white contact-icon" title="Email">
-                                        <i class="bi bi-envelope fs-3"></i>
-                                        <span class="d-block small mt-1">Email</span>
-                                    </a>
-                                    <a href="sms:+233542232515" class="text-white contact-icon" title="SMS">
-                                        <i class="bi bi-chat-text fs-3"></i>
-                                        <span class="d-block small mt-1">SMS</span>
-                                    </a>
-                                </div>
-                                <div class="contact-details">
-                                    <p class="mb-1 small">
-                                        <i class="bi bi-telephone me-2"></i> +233 542 232 515
-                                    </p>
-                                    <p class="mb-0 small">
-                                        <i class="bi bi-envelope me-2"></i> darkosammy2@gmail.com
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="text-center mt-5">
+        <h2 class="mb-4 text-dark">Need Assistance?</h2>
+        <p class="lead text-muted mx-auto" style="max-width: 600px;">
+            Our support team is ready to help with purchases, technical issues, or feedback.
+        </p>
+        <a href="{% url 'shop:contact_us' %}" class="btn btn-primary btn-lg fw-bold text-white shadow-lg">
+            <i class="bi bi-envelope me-2"></i> Contact Support
+        </a>
+        <div class="mt-3">
+            <a href="https://wa.me/233542232515" target="_blank" class="text-success small me-3 text-decoration-none">
+                <i class="bi bi-whatsapp"></i> Chat on WhatsApp
+            </a>
+            <a href="tel:+233542232515" class="text-dark small text-decoration-none">
+                <i class="bi bi-telephone"></i> Call Us
+            </a>
         </div>
     </div>
 </div>
@@ -266,6 +221,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // CSS for ripple animation
 const style = document.createElement('style');
 style.textContent = `
+    /* ADDED: Teal Gradient Class */
+    .bg-teal-gradient {
+        background: #008080; /* Teal primary color */
+        background: linear-gradient(135deg, #008080 0%, #004d4d 100%); /* Teal gradient for depth */
+    }
+
     @keyframes ripple {
         to {
             transform: scale(4);
@@ -294,16 +255,6 @@ style.textContent = `
         display: block;
     }
     
-    .contact-icon {
-        text-decoration: none;
-        text-align: center;
-        transition: transform 0.3s ease;
-    }
-    
-    .contact-icon:hover {
-        transform: translateY(-5px);
-    }
-    
     .feature-icon {
         width: 80px;
         height: 80px;
@@ -316,21 +267,12 @@ style.textContent = `
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     
+    /* UPDATED: Changed border color from blue to teal */
     .class-stats {
         background: #f8f9fa;
         padding: 15px;
         border-radius: 8px;
-        border-left: 4px solid #0d6efd;
-    }
-    
-    .cloudinary-badge {
-        animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 0.8; }
-        50% { opacity: 1; }
-        100% { opacity: 0.8; }
+        border-left: 4px solid #008080; /* Teal color */
     }
 `;
 document.head.appendChild(style);

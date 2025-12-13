@@ -3,13 +3,13 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
-from django.utils.safestring import mark_safe
 from .models import (
     Classes, Term, Subject, QuestionPaper, 
     Payment, DownloadHistory, FreeSample
 )
 
 # --- 1. Admin setup for Hierarchy Models ---
+# ... (ClassesAdmin, TermAdmin, SubjectAdmin remain unchanged)
 
 @admin.register(Classes)
 class ClassesAdmin(admin.ModelAdmin):
@@ -63,14 +63,14 @@ class SubjectAdmin(admin.ModelAdmin):
     view_papers_link.short_description = 'Papers Link'
 
 
-# --- 2. Enhanced Admin setup for QuestionPaper with Cloudinary ---
+# --- 2. Enhanced Admin setup for QuestionPaper (REVISED: Removed Preview) ---
 
 @admin.register(QuestionPaper)
 class QuestionPaperAdmin(admin.ModelAdmin):
     list_display = [
         'title', 'class_level', 'term', 'subject', 
         'price', 'is_paid', 'is_available', 
-        'views', 'file_preview', 'pdf_download_link'
+        'views', 'pdf_download_link' # REMOVED: 'file_preview'
     ]
     list_filter = ['class_level', 'term', 'subject', 'is_paid', 'is_available', 'exam_type']
     list_editable = ['price', 'is_paid', 'is_available']
@@ -78,8 +78,10 @@ class QuestionPaperAdmin(admin.ModelAdmin):
     search_fields = ['title', 'description', 'password']
     readonly_fields = [
         'views', 'file_size', 'created_at', 'updated_at', 
-        'cloudinary_public_id', 'pdf_preview', 'file_info',
-        'download_count', 'last_download'
+        'pdf_preview', 
+        'file_info', 
+        'download_count', 
+        'last_download'
     ]
     list_per_page = 25
     
@@ -99,8 +101,9 @@ class QuestionPaperAdmin(admin.ModelAdmin):
             'fields': ('price', 'is_paid', 'is_available', 'password'),
             'classes': ('collapse',)
         }),
-        ('Cloudinary Files', {
-            'fields': ('pdf_file', 'preview_image', 'file_info', 'pdf_preview'),
+        ('Files', {
+            # REMOVED: 'preview_image'
+            'fields': ('pdf_file', 'file_info', 'pdf_preview'), 
             'classes': ('wide',)
         }),
         ('Statistics', {
@@ -108,20 +111,12 @@ class QuestionPaperAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Metadata', {
-            'fields': ('cloudinary_public_id', 'created_at', 'updated_at'),
+            'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
     
-    def file_preview(self, obj):
-        """Show preview image in list display"""
-        if obj.preview_image:
-            return format_html(
-                '<img src="{}" style="max-height: 50px; max-width: 50px;" />',
-                obj.get_preview_image_url()
-            )
-        return "No Preview"
-    file_preview.short_description = 'Preview'
+    # REMOVED: file_preview method
     
     def pdf_download_link(self, obj):
         """Show download link in list display"""
@@ -134,38 +129,37 @@ class QuestionPaperAdmin(admin.ModelAdmin):
     pdf_download_link.short_description = 'PDF'
     
     def pdf_preview(self, obj):
-        """Show PDF info and preview in change form"""
+        """Show PDF info and preview in change form (removed image preview logic)"""
         if obj.pdf_file:
             return format_html("""
                 <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
                     <strong>PDF File:</strong> {}
                     <br><strong>Size:</strong> {}
                     <br><strong>URL:</strong> <a href="{}" target="_blank">{}</a>
-                    {}
                 </div>
             """,
                 obj.file_name,
-                obj.file_size,
+                obj.file_size or 'N/A', 
                 obj.get_pdf_url(),
                 "Open in new tab",
-                self._get_preview_html(obj) if obj.preview_image else ""
+                # REMOVED: self._get_preview_html(obj) condition
             )
         return "No PDF uploaded"
     pdf_preview.short_description = 'PDF Preview'
     pdf_preview.allow_tags = True
     
     def file_info(self, obj):
-        """Show file information"""
-        if obj.cloudinary_public_id:
+        """Show local file storage information"""
+        if obj.pdf_file:
             return format_html("""
                 <div style="margin: 10px 0; padding: 10px; background: #e8f4fd; border-radius: 5px;">
-                    <strong>Cloudinary Public ID:</strong> {}
-                    <br><strong>Resource Type:</strong> raw
-                    <br><strong>Folder:</strong> question_papers/
+                    <strong>Local File Path:</strong> {}
+                    <br><strong>Storage Type:</strong> FileSystemStorage
+                    <br><strong>Folder:</strong> question_papers/ (in MEDIA_ROOT)
                 </div>
-            """, obj.cloudinary_public_id)
-        return "Not uploaded to Cloudinary"
-    file_info.short_description = 'Cloudinary Info'
+            """, obj.pdf_file.name)
+        return "No file uploaded"
+    file_info.short_description = 'File Storage Info'
     
     def download_count(self, obj):
         return obj.downloads.count()
@@ -178,16 +172,7 @@ class QuestionPaperAdmin(admin.ModelAdmin):
         return "Never"
     last_download.short_description = 'Last Downloaded'
     
-    def _get_preview_html(self, obj):
-        """Generate preview HTML with thumbnail"""
-        if obj.preview_image:
-            thumbnail_url = obj.generate_thumbnail(width=150, height=200)
-            return format_html(
-                '<br><strong>Preview Image:</strong><br>'
-                '<img src="{}" style="max-width: 150px; margin-top: 10px; border: 1px solid #ddd;" />',
-                thumbnail_url
-            )
-        return ""
+    # REMOVED: _get_preview_html helper method
     
     def save_model(self, request, obj, form, change):
         # Auto-generate title if not provided
@@ -202,6 +187,7 @@ class QuestionPaperAdmin(admin.ModelAdmin):
 
 
 # --- 3. Enhanced Admin setup for Payment ---
+# ... (PaymentAdmin remains unchanged)
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
@@ -311,6 +297,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
 
 # --- 4. Admin setup for DownloadHistory ---
+# ... (DownloadHistoryAdmin remains unchanged)
 
 @admin.register(DownloadHistory)
 class DownloadHistoryAdmin(admin.ModelAdmin):
@@ -350,7 +337,6 @@ class DownloadHistoryAdmin(admin.ModelAdmin):
     
     def user_agent_short(self, obj):
         if obj.user_agent:
-            # Extract browser name
             ua = obj.user_agent.lower()
             if 'chrome' in ua:
                 return 'Chrome'
@@ -386,6 +372,7 @@ class DownloadHistoryAdmin(admin.ModelAdmin):
 
 
 # --- 5. Admin setup for FreeSample ---
+# ... (FreeSampleAdmin remains unchanged)
 
 @admin.register(FreeSample)
 class FreeSampleAdmin(admin.ModelAdmin):
@@ -436,10 +423,11 @@ class FreeSampleAdmin(admin.ModelAdmin):
             return format_html("""
                 <div style="padding: 10px; background: #f0f8ff; border-radius: 5px;">
                     <strong>Sample PDF:</strong> Available<br>
+                    <strong>File Path:</strong> {}<br>
                     <strong>URL:</strong> <a href="{}" target="_blank">Open in new tab</a><br>
                     <strong>Downloads:</strong> {} times
                 </div>
-            """, obj.sample_pdf.url, obj.downloads)
+            """, obj.sample_pdf.name, obj.sample_pdf.url, obj.downloads)
         return "No sample PDF uploaded"
     sample_info.short_description = 'Sample Information'
     

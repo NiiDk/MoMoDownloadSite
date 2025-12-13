@@ -5,7 +5,6 @@
 
 {% block content %}
 <div class="container py-4">
-    <!-- Header with Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'shop:class_list' %}">Classes</a></li>
@@ -13,7 +12,6 @@
         </ol>
     </nav>
     
-    <!-- Page Header -->
     <div class="text-center mb-5">
         <h1 class="text-primary fw-bold">
             <i class="bi bi-calendar-week me-2"></i>{{ class_level.name }} Terms
@@ -23,13 +21,12 @@
         </p>
     </div>
     
-    <!-- Terms Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for term_obj in terms %}
             <div class="col">
                 <a href="{% url 'shop:subject_list' class_level.slug term_obj.slug %}" class="text-decoration-none">
                     <div class="card h-100 shadow border-0 hover-lift">
-                        <div class="card-header bg-gradient-success text-white text-center py-4">
+                        <div class="card-header bg-teal-gradient text-white text-center py-4">
                             <div class="term-icon mb-3">
                                 <i class="bi bi-journal-text" style="font-size: 3rem;"></i>
                             </div>
@@ -40,7 +37,6 @@
                                 Access all subjects and question papers for {{ term_obj.name }}
                             </p>
                             
-                            <!-- Term Statistics -->
                             <div class="term-stats mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="text-muted">
@@ -60,7 +56,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Quick Info -->
                             <div class="quick-info">
                                 <small class="text-muted">
                                     <i class="bi bi-check-circle text-success"></i> 
@@ -94,14 +89,12 @@
         {% endfor %}
     </div>
     
-    <!-- Back Button -->
     <div class="text-center mt-5">
         <a href="{% url 'shop:class_list' %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-2"></i> Back to All Classes
         </a>
     </div>
     
-    <!-- Additional Info Section -->
     <div class="row justify-content-center mt-5 pt-4">
         <div class="col-lg-8">
             <div class="card bg-light border-0 shadow-sm">
@@ -173,11 +166,18 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* ADDED: Custom CSS class for Teal background */
+.bg-teal-gradient {
+    background: #008080; /* Teal primary color */
+    background: linear-gradient(135deg, #008080 0%, #004d4d 100%); /* Teal gradient for depth */
+}
+
 .term-stats {
     background: #f8f9fa;
     padding: 15px;
     border-radius: 8px;
-    border-left: 4px solid #198754;
+    /* CHANGED: Updated border color to match the teal theme */
+    border-left: 4px solid #008080; 
 }
 
 .term-icon {
