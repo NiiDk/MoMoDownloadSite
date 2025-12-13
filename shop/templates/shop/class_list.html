@@ -1,25 +1,90 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block page_title %}Select Your Class/Grade{% endblock %}
 
 {% block content %}
+<div class="container py-5">
+    <!-- Hero Section -->
     <div class="text-center mb-5">
-        <h2 class="display-5 text-primary"><i class="fas fa-chalkboard-teacher me-2"></i> Available Academic Levels</h2>
-        <p class="lead">Choose your class to browse available question papers</p>
+        <div class="mb-4">
+            <i class="bi bi-mortarboard-fill text-primary" style="font-size: 4rem;"></i>
+        </div>
+        <h1 class="display-5 text-primary fw-bold mb-3">
+            Available Academic Levels
+        </h1>
+        <p class="lead text-muted mx-auto" style="max-width: 600px;">
+            Choose your class to access thousands of question papers securely stored on Cloudinary
+        </p>
+        
+        <!-- Stats -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8">
+                <div class="d-flex flex-wrap justify-content-center gap-4">
+                    <div class="stat-item">
+                        <h3 class="text-info mb-0">{{ total_papers|default:"1000+" }}</h3>
+                        <small class="text-muted">Question Papers</small>
+                    </div>
+                    <div class="stat-item">
+                        <h3 class="text-success mb-0">{{ total_downloads|default:"5000+" }}</h3>
+                        <small class="text-muted">Total Downloads</small>
+                    </div>
+                    <div class="stat-item">
+                        <h3 class="text-warning mb-0">{{ classes|length }}</h3>
+                        <small class="text-muted">Academic Levels</small>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
+    <!-- Classes Grid -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
         {% for class_obj in classes %}
             <div class="col">
-                <a href="{% url 'shop:term_list' class_obj.slug %}" class="text-decoration-none">
-                    <div class="card card-class text-center h-100 shadow border-primary hover-shadow">
+                <a href="{% url 'shop:term_list' class_obj.slug %}" class="text-decoration-none card-link">
+                    <div class="card class-card h-100 shadow border-0 hover-lift">
+                        <div class="card-header bg-gradient-primary text-white position-relative">
+                            <div class="class-icon">
+                                <i class="bi bi-backpack" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h4 class="card-title mb-0 fw-bold">{{ class_obj.name }}</h4>
+                        </div>
                         <div class="card-body p-4">
-                            <h5 class="card-title fw-bold text-primary display-6">{{ class_obj.name }}</h5>
-                            <p class="card-text text-muted mt-3">
-                                {{ class_obj.description|default:"Click to access Term 1, Term 2, and Term 3 papers for this grade." }}
+                            <p class="card-text text-muted mb-4">
+                                {{ class_obj.description|default:"Access Term 1, Term 2, and Term 3 question papers for this academic level." }}
                             </p>
-                            <span class="btn btn-outline-primary mt-3">
-                                View Terms →
+                            
+                            <!-- Class Stats -->
+                            <div class="class-stats mb-3">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted small">
+                                        <i class="bi bi-file-earmark-pdf"></i> Papers:
+                                    </span>
+                                    <span class="fw-bold text-primary">
+                                        {{ class_obj.get_paper_count }}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">
+                                        <i class="bi bi-collection"></i> Subjects:
+                                    </span>
+                                    <span class="fw-bold text-info">
+                                        {{ class_obj.subjects_count|default:"Multiple" }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Cloudinary Storage Badge -->
+                            <div class="cloudinary-badge mt-3">
+                                <span class="badge bg-light text-dark small">
+                                    <i class="bi bi-cloud-check"></i> Secured on Cloudinary
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 text-center">
+                            <span class="btn btn-primary btn-sm px-4">
+                                <i class="bi bi-arrow-right-circle me-1"></i> Browse Papers
                             </span>
                         </div>
                     </div>
@@ -27,48 +92,247 @@
             </div>
         {% empty %}
             <div class="col-12">
-                <div class="alert alert-warning text-center" role="alert">
-                    <h4 class="alert-heading">No Classes Found!</h4>
-                    <p>No academic levels have been added yet. Please log into the Admin panel to add classes.</p>
-                    <a href="{% url 'admin:index' %}" class="btn btn-outline-warning">Go to Admin</a>
+                <div class="alert alert-warning text-center py-5">
+                    <div class="py-4">
+                        <i class="bi bi-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <h4 class="alert-heading">No Academic Levels Found!</h4>
+                        <p>No classes have been added yet. Please log into the Admin panel to add academic levels.</p>
+                        {% if user.is_staff %}
+                        <a href="{% url 'admin:index' %}" class="btn btn-outline-warning mt-2">
+                            <i class="bi bi-gear"></i> Go to Admin Panel
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         {% endfor %}
     </div>
     
-    <div class="row justify-content-center mt-5 pt-4">
+    <!-- Features Section -->
+    <div class="row justify-content-center mt-5 mb-5">
         <div class="col-lg-10">
-            <div class="card bg-info text-white shadow-lg border-0">
+            <div class="card bg-light border-0 shadow-sm">
                 <div class="card-body p-4 p-md-5">
-                    <div class="row align-items-center">
-                        <div class="col-md-7">
-                            <h2 class="card-title mb-3"><i class="fas fa-question-circle me-2"></i> Have Questions or Suggestions?</h2>
-                            <p class="lead mb-4">
-                                Don't hesitate to reach out! We are here to assist with purchases, support, and feedback.
-                            </p>
-                            <a href="{% url 'shop:contact_us' %}" class="btn btn-warning btn-lg fw-bold text-dark">
-                                <i class="fas fa-envelope me-2"></i> Go to Contact Page
-                            </a>
-                        </div>
-                        <div class="col-md-5 mt-4 mt-md-0 text-md-end">
-                            <h5 class="mb-2">Direct Contact:</h5>
-                            <div class="d-flex justify-content-md-end align-items-center mb-3">
-                                <a href="tel:+233542232515" class="text-white me-3 fs-3" title="Phone Call">
-                                    <i class="fas fa-phone-alt"></i>
-                                </a>
-                                <a href="https://wa.me/233542232515" target="_blank" class="text-success me-3 fs-3" title="WhatsApp">
-                                    <i class="fab fa-whatsapp-square"></i>
-                                </a>
-                                <a href="mailto:darkosammy2@gmail.com" class="text-white fs-3" title="Send Email">
-                                    <i class="fas fa-envelope-square"></i>
-                                </a>
+                    <h3 class="text-center mb-4 text-primary">
+                        <i class="bi bi-stars me-2"></i> Why Choose Our Platform?
+                    </h3>
+                    <div class="row g-4">
+                        <div class="col-md-4 text-center">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-cloud-arrow-up text-info" style="font-size: 2.5rem;"></i>
                             </div>
-                            <p class="small mb-0 text-white-75">Phone: +233542232515</p>
-                            <p class="small mb-0 text-white-75">Email: darkosammy2@gmail.com</p>
+                            <h5>Cloudinary Storage</h5>
+                            <p class="text-muted small">All papers securely stored on Cloudinary CDN for fast, reliable downloads</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-shield-check text-success" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h5>Password Protected</h5>
+                            <p class="text-muted small">Paid papers are password-protected and delivered via SMS after payment</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="feature-icon mb-3">
+                                <i class="bi bi-lightning-charge text-warning" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h5>Instant Access</h5>
+                            <p class="text-muted small">Get immediate download access after successful payment verification</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    {% endblock %}
+    
+    <!-- Contact Section -->
+    <div class="row justify-content-center mt-5">
+        <div class="col-lg-10">
+            <div class="card bg-gradient-info text-white shadow-lg border-0">
+                <div class="card-body p-4 p-md-5">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            <h2 class="card-title mb-3">
+                                <i class="bi bi-question-circle me-2"></i> Need Assistance?
+                            </h2>
+                            <p class="lead mb-4">
+                                Our support team is ready to help with purchases, technical issues, or feedback.
+                            </p>
+                            <a href="{% url 'shop:contact_us' %}" class="btn btn-warning btn-lg fw-bold text-dark">
+                                <i class="bi bi-envelope me-2"></i> Contact Support
+                            </a>
+                        </div>
+                        <div class="col-md-5 mt-4 mt-md-0">
+                            <div class="contact-methods">
+                                <h5 class="mb-3">Direct Contact:</h5>
+                                <div class="contact-icons d-flex gap-3 mb-3">
+                                    <a href="tel:+233542232515" class="text-white contact-icon" title="Call Us">
+                                        <i class="bi bi-telephone fs-3"></i>
+                                        <span class="d-block small mt-1">Call</span>
+                                    </a>
+                                    <a href="https://wa.me/233542232515" target="_blank" class="text-white contact-icon" title="WhatsApp">
+                                        <i class="bi bi-whatsapp fs-3"></i>
+                                        <span class="d-block small mt-1">WhatsApp</span>
+                                    </a>
+                                    <a href="mailto:darkosammy2@gmail.com" class="text-white contact-icon" title="Email">
+                                        <i class="bi bi-envelope fs-3"></i>
+                                        <span class="d-block small mt-1">Email</span>
+                                    </a>
+                                    <a href="sms:+233542232515" class="text-white contact-icon" title="SMS">
+                                        <i class="bi bi-chat-text fs-3"></i>
+                                        <span class="d-block small mt-1">SMS</span>
+                                    </a>
+                                </div>
+                                <div class="contact-details">
+                                    <p class="mb-1 small">
+                                        <i class="bi bi-telephone me-2"></i> +233 542 232 515
+                                    </p>
+                                    <p class="mb-0 small">
+                                        <i class="bi bi-envelope me-2"></i> darkosammy2@gmail.com
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to class cards
+    const classCards = document.querySelectorAll('.class-card');
+    
+    classCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px)';
+            this.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
+            this.style.boxShadow = '0 15px 35px rgba(0,0,0,0.1)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+        
+        // Add click ripple effect
+        card.addEventListener('click', function(e) {
+            if (!this.closest('a').href) return;
+            
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(13, 110, 253, 0.3);
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                width: ${size}px;
+                height: ${size}px;
+                top: ${y}px;
+                left: ${x}px;
+                pointer-events: none;
+            `;
+            
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+    
+    // Add animation to stat items
+    const statItems = document.querySelectorAll('.stat-item');
+    statItems.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0)';
+        }, 100 * index);
+    });
+});
+
+// CSS for ripple animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes ripple {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+    
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .class-card {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .class-card .class-icon {
+        position: absolute;
+        top: -20px;
+        right: 20px;
+        opacity: 0.2;
+        transform: rotate(15deg);
+    }
+    
+    .card-link {
+        display: block;
+    }
+    
+    .contact-icon {
+        text-decoration: none;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+    
+    .contact-icon:hover {
+        transform: translateY(-5px);
+    }
+    
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .class-stats {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #0d6efd;
+    }
+    
+    .cloudinary-badge {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.8; }
+        50% { opacity: 1; }
+        100% { opacity: 0.8; }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

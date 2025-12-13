@@ -6,39 +6,45 @@ from django import forms
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponse, FileResponse, Http404 
+from django.http import JsonResponse, HttpResponse, Http404
 from django.urls import reverse
 from django.db import models
-from django.core.mail import send_mail # <--- NEW IMPORT
-from .models import Classes, Term, Subject, QuestionPaper, Payment
-import os 
+from django.core.mail import send_mail
+from django.db.models import Count
+from .models import Classes, Term, Subject, QuestionPaper, Payment, DownloadHistory
+from django.utils import timezone
 
 # ====================================================================
 # 1. HIERARCHICAL LIST VIEWS (Navigation)
 # ====================================================================
 
-
 def class_list(request):
     """
     Displays the top-level list of all available Classes (e.g., JHS 1).
-    This is the new homepage, aliased by the root URL '/'.
     """
-    classes = Classes.objects.all()  # Remove .order_by('order', 'name')
+    classes = Classes.objects.all()
+    
+    # Get total papers count for stats
+    total_papers = QuestionPaper.objects.filter(is_available=True).count()
+    
+    # Get download count (if available)
+    total_downloads = DownloadHistory.objects.count()
+    
     context = {
         'classes': classes,
         'page_title': 'Select Your Class/Grade',
-        'is_homepage': True
+        'is_homepage': True,
+        'total_papers': total_papers,
+        'total_downloads': total_downloads,
     }
     return render(request, 'shop/class_list.html', context)
 
 def term_list(request, class_slug):
     """
-    Displays the list of terms (Term 1, 2, 3) available for the selected Class.
+    Displays the list of terms available for the selected Class.
     """
     class_level = get_object_or_404(Classes, slug=class_slug)
-    
-    # FIX APPLIED HERE: Used the correct related_name 'terms' defined in shop/models.py
-    terms = class_level.terms.all()  # Remove .order_by('order', 'name')
+    terms = class_level.terms.all()
     
     context = {
         'class_level': class_level,
@@ -47,7 +53,6 @@ def term_list(request, class_slug):
     }
     return render(request, 'shop/term_list.html', context)
 
-# 1.3. Third Level: List all Subjects for a Term (UPDATED)
 def subject_list(request, class_slug, term_slug):
     """
     Displays ALL subjects and ALL papers for each subject.
@@ -95,7 +100,6 @@ def subject_list(request, class_slug, term_slug):
     }
     return render(request, 'shop/subject_list.html', context)
 
-# 1.4. NEW: Subject Papers List View
 def subject_papers_list(request, class_slug, term_slug, subject_slug):
     """
     Shows ALL papers for a specific subject in a class and term.
@@ -111,17 +115,24 @@ def subject_papers_list(request, class_slug, term_slug, subject_slug):
         is_available=True
     ).order_by('-year', 'exam_type', 'title')
     
+    # Get related papers for sidebar/related section
+    related_papers = QuestionPaper.objects.filter(
+        class_level=class_level,
+        term=term,
+        is_available=True
+    ).exclude(subject=subject).order_by('?')[:3]
+    
     context = {
         'class_level': class_level,
         'term': term,
         'subject': subject,
         'papers': papers,
         'paper_count': papers.count(),
+        'related_papers': related_papers,
         'page_title': f'{class_level.name} {term.name} - {subject.name} Papers',
     }
-    return render(request, 'shop/subject_papers_list.html', context)
+    return render(request, 'shop/paper_list.html', context)
 
-# 1.5. Final Level: Paper Detail/Buy Page
 def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
     paper = get_object_or_404(QuestionPaper, 
         class_level__slug=class_slug,
@@ -134,19 +145,28 @@ def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
     # Increment view count
     paper.increment_views()
     
-    # Get related papers (other papers in same subject)
+    # Get related papers (other papers in same subject and term)
     related_papers = QuestionPaper.objects.filter(
         class_level=paper.class_level,
         term=paper.term,
         subject=paper.subject,
         is_available=True
-    ).exclude(id=paper.id).order_by('-year')[:5]
+    ).exclude(id=paper.id).order_by('-year')[:4]
     
+    # If not enough papers in same subject, get from same class
+    if related_papers.count() < 2:
+        additional_papers = QuestionPaper.objects.filter(
+            class_level=paper.class_level,
+            is_available=True
+        ).exclude(id=paper.id).exclude(id__in=[p.id for p in related_papers]).order_by('?')[:4 - related_papers.count()]
+        related_papers = list(related_papers) + list(additional_papers)
+    
+    # Determine button URL and text
     if paper.is_paid:
         button_url = reverse('shop:buy_paper', args=[paper.slug])
         button_text = "Buy Now & Get Password via SMS"
     else:
-        button_url = reverse('shop:download_page', args=[paper.slug])
+        button_url = reverse('shop:download_file', args=[paper.slug])
         button_text = "Free Download"
     
     context = {
@@ -158,9 +178,6 @@ def paper_detail(request, class_slug, term_slug, subject_slug, paper_slug):
         'button_text': button_text
     }
     return render(request, 'shop/paper_detail.html', context)
-
-# ... rest of the views remain the same ...
-
 
 # ====================================================================
 # 2. FORM DEFINITION (ADD CONTACT FORM)
@@ -177,7 +194,6 @@ class PurchaseForm(forms.Form):
         max_length=20,
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
-
 
 class ContactForm(forms.Form):
     """Simple form for contact enquiries."""
@@ -200,7 +216,6 @@ class ContactForm(forms.Form):
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Please type your message here...'})
     )
 
-
 # ====================================================================
 # 3. MAIN CONDITIONAL LOGIC & PAYMENT INITIATION
 # ====================================================================
@@ -218,8 +233,8 @@ def initiate_payment_or_download(request, paper_slug):
 
     # === CONDITIONAL LOGIC ===
     if not paper.is_paid:
-        # If the paper is FREE, redirect to the new landing page
-        return redirect('shop:download_page', paper_slug=paper.slug)
+        # If the paper is FREE, redirect to download
+        return redirect('shop:download_file', paper_slug=paper.slug)
     
     # === ORIGINAL PAID LOGIC (IF is_paid is checked/True) ===
     if request.method == 'POST':
@@ -245,7 +260,7 @@ def initiate_payment_or_download(request, paper_slug):
             
             data = {
                 "email": email,
-                "amount": payment.amount_in_kobo(),
+                "amount": payment.amount_in_pesewas(),
                 "currency": settings.CURRENCY_CODE,
                 "reference": str(payment.ref),
                 "callback_url": f"{request.scheme}://{request.get_host()}{reverse('shop:payment_callback')}",
@@ -268,81 +283,115 @@ def initiate_payment_or_download(request, paper_slug):
 
     return render(request, 'shop/buy_paper.html', {'form': form, 'paper': paper})
 
-
 # ====================================================================
-# 4. FREE DOWNLOAD LANDING PAGE
-# ====================================================================
-
-def free_download_landing(request, paper_slug):
-    """
-    Renders the page that says "Free Download" and gives the final file link.
-    """
-    paper = get_object_or_404(QuestionPaper, slug=paper_slug)
-    
-    # URL to the actual file serving view
-    file_download_url = reverse('shop:download_file', args=[paper.slug])
-    
-    context = {
-        'paper': paper,
-        'file_download_url': file_download_url
-    }
-    return render(request, 'shop/free_download_landing.html', context)
-
-
-# ====================================================================
-# 5. ACTUAL FILE DOWNLOAD VIEW
+# 4. FREE DOWNLOAD VIEW (UPDATED FOR CLOUDINARY)
 # ====================================================================
 
 def download_file(request, paper_slug):
     """
-    Serves the file directly to the user's browser.
+    Handles file downloads for both free and paid papers.
+    For paid papers, requires payment verification.
     """
     paper = get_object_or_404(QuestionPaper, slug=paper_slug)
     
-    # Optional check: Block paid papers if someone finds this direct link
-    if paper.is_paid:
-        raise Http404("This file requires payment.")
-
-    if not paper.pdf_file:
-        raise Http404("This paper does not have an associated file for download.")
-
-    try:
-        # Get the absolute path to the file
-        file_path = paper.pdf_file.path 
-        file_handle = open(file_path, 'rb')
-        
-        # FileResponse handles streaming the file content efficiently
-        response = FileResponse(
-            file_handle, 
-            as_attachment=True, 
-            filename=os.path.basename(file_path)
-        )
-        return response
+    # Check if paper is available
+    if not paper.is_available:
+        raise Http404("This paper is not available for download.")
     
-    except FileNotFoundError:
-        raise Http404("The requested paper file was not found on the server.")
-    except Exception as e:
-        return render(request, 'shop/error.html', {'message': f"An unexpected error occurred during download: {e}"})
-
+    # For paid papers, check if user has paid
+    if paper.is_paid:
+        # Check for payment verification via session or URL parameter
+        payment_ref = request.GET.get('ref')
+        if not payment_ref:
+            # No payment reference, redirect to purchase page
+            return redirect('shop:buy_paper', paper_slug=paper.slug)
+        
+        # Verify payment exists and is verified
+        try:
+            payment = Payment.objects.get(ref=payment_ref, verified=True)
+        except Payment.DoesNotExist:
+            # Invalid or unverified payment
+            return redirect('shop:buy_paper', paper_slug=paper.slug)
+    
+    # For free papers or verified paid papers, proceed with download
+    if not paper.pdf_file or not paper.get_pdf_url():
+        raise Http404("This paper does not have an associated file for download.")
+    
+    # Log download history
+    user_email = request.GET.get('email', 'anonymous@example.com')
+    DownloadHistory.log_download(
+        paper=paper,
+        email=user_email,
+        request=request,
+        payment=payment if paper.is_paid else None
+    )
+    
+    # Get Cloudinary URL
+    pdf_url = paper.get_secure_pdf_url()
+    
+    if not pdf_url:
+        raise Http404("The requested paper file was not found.")
+    
+    # Redirect to Cloudinary URL (browser will handle download)
+    return redirect(pdf_url)
 
 # ====================================================================
-# 6. PAYMENT CALLBACK VIEW
+# 5. PAYMENT CALLBACK VIEW (UPDATED)
 # ====================================================================
 
 def payment_callback(request):
     """
     Handles the user redirect after payment on the Paystack gateway.
+    Shows success page with download options.
     """
     reference = request.GET.get('reference')
     
+    if not reference:
+        return redirect('shop:class_list')
+    
+    try:
+        payment = Payment.objects.get(ref=reference)
+    except Payment.DoesNotExist:
+        return render(request, 'shop/error.html', {
+            'message': f'Payment reference {reference} not found.',
+            'page_title': 'Payment Error'
+        })
+    
+    # Check if payment is verified
+    if not payment.verified:
+        # Check with Paystack
+        headers = {
+            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+            "Content-Type": "application/json"
+        }
+        verification_url = f"https://api.paystack.co/transaction/verify/{reference}"
+        verification_response = requests.get(verification_url, headers=headers)
+        
+        if verification_response.status_code == 200:
+            verification_data = verification_response.json()
+            if (verification_data['data']['status'] == 'success' and 
+                verification_data['data']['amount'] == payment.amount_in_pesewas()):
+                
+                # Mark as verified
+                payment.mark_as_verified(
+                    transaction_id=verification_data['data']['id'],
+                    amount=float(verification_data['data']['amount']) / 100
+                )
+    
+    # Create download URL with email parameter
+    download_url = reverse('shop:download_file', args=[payment.question_paper.slug])
+    download_url_with_params = f"{download_url}?ref={payment.ref}&email={payment.email}"
+    
     context = {
-        'reference': reference,
+        'payment': payment,
+        'currency_code': settings.CURRENCY_CODE,
+        'download_url': download_url_with_params,
+        'page_title': 'Payment Complete'
     }
     return render(request, 'shop/callback_success.html', context)
 
-
 # ====================================================================
-# 7. PAYSTACK WEBHOOK HANDLER
+# 6. PAYSTACK WEBHOOK HANDLER
 # ====================================================================
 
 @csrf_exempt
@@ -367,7 +416,7 @@ def paystack_webhook(request):
         except Payment.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Payment reference not found'}, status=400)
 
-        # 4. Verify Payment with Paystack (Double Check)
+        # Verify Payment with Paystack (Double Check)
         headers = {
             "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
             "Content-Type": "application/json"
@@ -377,11 +426,14 @@ def paystack_webhook(request):
         verification_data = verification_response.json()
 
         if (verification_data['data']['status'] == 'success' and 
-            verification_data['data']['amount'] == payment.amount_in_kobo()):
+            verification_data['data']['amount'] == payment.amount_in_pesewas()):
             
-            # 5. Mark Payment as Verified and Send Fulfillment
+            # Mark Payment as Verified and Send Fulfillment
             if not payment.verified:
                 payment.verified = True
+                payment.amount_paid = float(verification_data['data']['amount']) / 100
+                if verification_data['data'].get('id'):
+                    payment.transaction_id = verification_data['data']['id']
                 payment.save()
 
                 question_paper = payment.question_paper
@@ -398,8 +450,12 @@ def paystack_webhook(request):
                     "apiKey": settings.ARKESEL_API_KEY
                 }
 
-                # Send the SMS via Arkesel
-                requests.post(arkesel_url, json=arkesel_payload)
+                try:
+                    # Send the SMS via Arkesel
+                    requests.post(arkesel_url, json=arkesel_payload)
+                except Exception as e:
+                    # Log SMS error but don't fail the webhook
+                    print(f"Error sending SMS: {e}")
                 
                 return JsonResponse({'status': 'success', 'message': 'Payment verified and password sent'}, status=200)
             
@@ -409,113 +465,75 @@ def paystack_webhook(request):
 
     return JsonResponse({'status': 'success', 'message': 'Webhook received, but not a charge success event'}, status=200)
 
-
 # ====================================================================
-# 8. Placeholder Views (ADD CONTACT VIEW)
+# 7. API VIEWS FOR TRACKING
 # ====================================================================
 
-def profile(request):
-    """Placeholder for My Profile view."""
-    return render(request, 'shop/profile.html', {'page_title': 'My Profile'})
-
-def purchase_history(request):
-    """Placeholder for Purchase History view."""
-    return render(request, 'shop/purchase_history.html', {'page_title': 'Purchase History'})
-
-def login(request):
-    """Placeholder for Login view."""
-    return redirect('admin:login')
-
-def logout(request):
-    """Placeholder for Logout view."""
-    return redirect('shop:class_list')
-
-def register(request):
-    """Placeholder for Register view."""
-    return render(request, 'shop/register.html', {'page_title': 'Register'})
-
-
-def contact_us(request):
+@csrf_exempt
+def track_download_api(request, paper_slug):
     """
-    Handles the contact form display and submission, and sends the message via email.
+    API endpoint to track downloads (called via JavaScript).
     """
-    # === UPDATED IMPORT: send_mail is now imported at the top of the file ===
-    if request.method == 'POST':
-        form = ContactForm(request.POST)
-        if form.is_valid():
-            name = form.cleaned_data['name']
-            visitor_email = form.cleaned_data['email']
-            subject = form.cleaned_data['subject']
-            message = form.cleaned_data['message']
-            
-            # 1. Compose the Email Content
-            full_subject = f"[CONTACT FORM] {subject} - From: {name}"
-            email_body = f"Message received from the website contact form.\n\n"
-            email_body += f"Name: {name}\n"
-            email_body += f"Email: {visitor_email}\n"
-            email_body += f"Subject: {subject}\n\n"
-            email_body += f"--- MESSAGE CONTENT ---\n{message}\n---------------------\n"
-            
-            try:
-                # 2. Send Email to the Admin (Your Account)
-                send_mail(
-                    full_subject,
-                    email_body,
-                    settings.DEFAULT_FROM_EMAIL, # Sender (configured in settings.py)
-                    ['darkosammy2@gmail.com'], # Admin Recipient (Your Email)
-                    fail_silently=False,
-                )
-                
-                # Optional: Send Confirmation to the Visitor (Good practice)
-                send_mail(
-                    f"Confirmation: We received your message",
-                    f"Dear {name},\n\nThank you for reaching out to us. We have received your message regarding: '{subject}'. We will respond as soon as possible.\n\n---\nInsight Innovations Team",
-                    settings.DEFAULT_FROM_EMAIL,
-                    [visitor_email],
-                    fail_silently=True,
-                )
-                
-                context = {
-                    'page_title': 'Message Sent',
-                    'success': True,
-                    'name': name
-                }
-                return render(request, 'shop/contact_us.html', context)
-
-            except Exception as e:
-                # Handle email sending errors (e.g., incorrect settings)
-                print(f"Error sending contact email: {e}")
-                # Re-display the form with an error message
-                context = {
-                    'page_title': 'Contact Us - Error',
-                    'form': form,
-                    'success': False,
-                    'email_error': 'There was a server error sending your message. Please try again or call us.',
-                    'phone': '+233542232515', 
-                    'email': 'darkosammy2@gmail.com',
-                    'location': 'Accra, Ghana'
-                }
-                return render(request, 'shop/contact_us.html', context)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
     
-    # Initial GET request or non-valid form submission
-    else:
-        form = ContactForm()
-    
-    # Context for displaying the form
-    context = {
-        'page_title': 'Contact Us',
-        'form': form,
-        'success': False,
-        # Static Contact Details to display on the page
-        'phone': '+233542232515', 
-        'email': 'darkosammy2@gmail.com',
-        'location': 'Accra, Ghana'
-    }
+    try:
+        paper = get_object_or_404(QuestionPaper, slug=paper_slug)
+        
+        # Get data from POST request
+        data = json.loads(request.body)
+        email = data.get('email', 'anonymous@example.com')
+        payment_ref = data.get('payment_ref')
+        
+        # Log download
+        DownloadHistory.log_download(
+            paper=paper,
+            email=email,
+            request=request,
+            payment=Payment.objects.get(ref=payment_ref) if payment_ref else None
+        )
+        
+        return JsonResponse({'success': True, 'message': 'Download tracked'})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
-# Add these functions at the end of your views.py file (before the last line if any)
+@csrf_exempt
+def resend_password_api(request, payment_ref):
+    """
+    API endpoint to resend password SMS.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        payment = get_object_or_404(Payment, ref=payment_ref)
+        question_paper = payment.question_paper
+        
+        # Compose the SMS message
+        message = f"Your password for {question_paper.title} is: {question_paper.password}. Thank you for your purchase from Insight Innovations!"
+        
+        # Arkesel API Details
+        arkesel_url = "https://sms.arkesel.com/api/v2/sms/send"
+        arkesel_payload = {
+            "sender": "Insight Innovations", 
+            "message": message,
+            "recipients": [payment.phone_number],
+            "apiKey": settings.ARKESEL_API_KEY
+        }
+        
+        response = requests.post(arkesel_url, json=arkesel_payload)
+        
+        if response.status_code == 200:
+            return JsonResponse({'success': True, 'message': 'Password resent'})
+        else:
+            return JsonResponse({'error': 'Failed to send SMS'}, status=500)
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 # ====================================================================
-# ADDITIONAL VIEWS FOR STATIC PAGES
+# 8. ADDITIONAL VIEWS
 # ====================================================================
 
 def about(request):
@@ -542,7 +560,6 @@ def about(request):
         """
     }
     return render(request, 'shop/about.html', context)
-
 
 def faq(request):
     """Frequently Asked Questions page"""
@@ -583,7 +600,6 @@ def faq(request):
     }
     return render(request, 'shop/faq.html', context)
 
-
 def privacy_policy(request):
     """Privacy policy page"""
     context = {
@@ -612,7 +628,6 @@ def privacy_policy(request):
         """
     }
     return render(request, 'shop/privacy_policy.html', context)
-
 
 def terms_of_service(request):
     """Terms of service page"""
@@ -643,9 +658,8 @@ def terms_of_service(request):
     }
     return render(request, 'shop/terms_of_service.html', context)
 
-
 # ====================================================================
-# SEARCH AND BROWSE VIEWS
+# 9. SEARCH AND BROWSE VIEWS
 # ====================================================================
 
 def search_papers(request):
@@ -670,7 +684,6 @@ def search_papers(request):
     }
     return render(request, 'shop/search_results.html', context)
 
-
 def all_papers(request):
     """Display all papers across all categories"""
     papers = QuestionPaper.objects.filter(
@@ -684,75 +697,111 @@ def all_papers(request):
     }
     return render(request, 'shop/all_papers.html', context)
 
-
-def papers_by_year(request, year):
-    """Display papers by year"""
-    papers = QuestionPaper.objects.filter(
-        year=year,
-        is_available=True
-    ).select_related('class_level', 'term', 'subject').order_by('class_level__name', 'term__name')
-    
-    context = {
-        'year': year,
-        'papers': papers,
-        'page_title': f'Papers from {year}'
-    }
-    return render(request, 'shop/papers_by_year.html', context)
-
-
-def papers_by_type(request, exam_type):
-    """Display papers by exam type"""
-    # Map URL parameter to database value if needed
-    exam_type_map = {
-        'endterm': 'endterm',
-        'midterm': 'midterm',
-        'cat': 'cat',
-        'final': 'final',
-        'mock': 'mock',
-        'assignment': 'assignment',
-        'others': 'others'
-    }
-    
-    db_exam_type = exam_type_map.get(exam_type, exam_type)
-    
-    papers = QuestionPaper.objects.filter(
-        exam_type=db_exam_type,
-        is_available=True
-    ).select_related('class_level', 'term', 'subject')
-    
-    # Get display name for exam type
-    exam_type_choices = {
-        'endterm': 'End-Term Exam',
-        'midterm': 'Mid-Term Exam',
-        'cat': 'CAT (Continuous Assessment Test)',
-        'final': 'Final Exam',
-        'mock': 'Mock Exam',
-        'assignment': 'Assignment',
-        'others': 'Others'
-    }
-    
-    exam_type_display = exam_type_choices.get(db_exam_type, db_exam_type)
-    
-    context = {
-        'exam_type': exam_type,
-        'exam_type_display': exam_type_display,
-        'papers': papers,
-        'page_title': f'{exam_type_display} Papers'
-    }
-    return render(request, 'shop/papers_by_type.html', context)
-
-
 # ====================================================================
-# UTILITY VIEWS (Can be added later)
+# 10. CONTACT VIEW
 # ====================================================================
 
-def download_subject_zip(request, class_slug, term_slug, subject_slug):
-    """Download all papers for a subject as ZIP file (placeholder)"""
-    return redirect('shop:subject_list', class_slug=class_slug, term_slug=term_slug)
+def contact_us(request):
+    """
+    Handles the contact form display and submission, and sends the message via email.
+    """
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data['name']
+            visitor_email = form.cleaned_data['email']
+            subject = form.cleaned_data['subject']
+            message = form.cleaned_data['message']
+            
+            # 1. Compose the Email Content
+            full_subject = f"[CONTACT FORM] {subject} - From: {name}"
+            email_body = f"Message received from the website contact form.\n\n"
+            email_body += f"Name: {name}\n"
+            email_body += f"Email: {visitor_email}\n"
+            email_body += f"Subject: {subject}\n\n"
+            email_body += f"--- MESSAGE CONTENT ---\n{message}\n---------------------\n"
+            
+            try:
+                # 2. Send Email to the Admin (Your Account)
+                send_mail(
+                    full_subject,
+                    email_body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    ['darkosammy2@gmail.com'],
+                    fail_silently=False,
+                )
+                
+                # Optional: Send Confirmation to the Visitor (Good practice)
+                send_mail(
+                    f"Confirmation: We received your message",
+                    f"Dear {name},\n\nThank you for reaching out to us. We have received your message regarding: '{subject}'. We will respond as soon as possible.\n\n---\nInsight Innovations Team",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [visitor_email],
+                    fail_silently=True,
+                )
+                
+                context = {
+                    'page_title': 'Message Sent',
+                    'success': True,
+                    'name': name
+                }
+                return render(request, 'shop/contact_us.html', context)
 
+            except Exception as e:
+                # Handle email sending errors (e.g., incorrect settings)
+                print(f"Error sending contact email: {e}")
+                context = {
+                    'page_title': 'Contact Us - Error',
+                    'form': form,
+                    'success': False,
+                    'email_error': 'There was a server error sending your message. Please try again or call us.',
+                    'phone': '+233542232515', 
+                    'email': 'darkosammy2@gmail.com',
+                    'location': 'Accra, Ghana'
+                }
+                return render(request, 'shop/contact_us.html', context)
+    
+    # Initial GET request or non-valid form submission
+    else:
+        form = ContactForm()
+    
+    context = {
+        'page_title': 'Contact Us',
+        'form': form,
+        'success': False,
+        'phone': '+233542232515', 
+        'email': 'darkosammy2@gmail.com',
+        'location': 'Accra, Ghana'
+    }
+    
+    return render(request, 'shop/contact_us.html', context)
+
+# ====================================================================
+# 11. UTILITY VIEWS
+# ====================================================================
+
+def profile(request):
+    """Placeholder for My Profile view."""
+    return render(request, 'shop/profile.html', {'page_title': 'My Profile'})
+
+def purchase_history(request):
+    """Placeholder for Purchase History view."""
+    return render(request, 'shop/purchase_history.html', {'page_title': 'Purchase History'})
+
+def login(request):
+    """Placeholder for Login view."""
+    return redirect('admin:login')
+
+def logout(request):
+    """Placeholder for Logout view."""
+    return redirect('shop:class_list')
+
+def register(request):
+    """Placeholder for Register view."""
+    return render(request, 'shop/register.html', {'page_title': 'Register'})
 
 def payment_status(request, reference):
-    """Check payment status (placeholder)"""
+    """Check payment status"""
     try:
         payment = Payment.objects.get(ref=reference)
         context = {
@@ -765,14 +814,55 @@ def payment_status(request, reference):
             'message': f'Payment reference {reference} not found.',
             'page_title': 'Payment Not Found'
         })
+def your_view(request):
+    context = {
+        'current_year': timezone.now().year,
+        # ... other context
+    }
+    return render(request, 'template.html', context)
 
+def papers_by_year(request, year):
+    """
+    Display all available papers for a specific year.
+    """
+    papers = QuestionPaper.objects.filter(
+        year=year,
+        is_available=True
+    ).select_related('class_level', 'term', 'subject').order_by(
+        'class_level__name',
+        'term__name',
+        'subject__name'
+    )
 
-# ====================================================================
-# SIMPLE TEMPLATE VIEWS (For missing templates)
-# ====================================================================
+    if not papers.exists():
+        raise Http404("No papers found for this year.")
 
-def simple_template_view(request, template_name, page_title):
-    """Generic view for simple templates"""
-    return render(request, f'shop/{template_name}', {'page_title': page_title})
+    context = {
+        'papers': papers,
+        'year': year,
+        'total_count': papers.count(),
+        'page_title': f'Question Papers for {year}'
+    }
+    return render(request, 'shop/papers_by_year.html', context)
+def papers_by_type(request, exam_type):
+    """
+    Display papers filtered by exam type (e.g. BECE, Mock, End of Term).
+    """
+    papers = QuestionPaper.objects.filter(
+        exam_type__iexact=exam_type,
+        is_available=True
+    ).select_related('class_level', 'term', 'subject').order_by(
+        '-year',
+        'class_level__name'
+    )
 
-    return render(request, 'shop/contact_us.html', context)
+    if not papers.exists():
+        raise Http404("No papers found for this exam type.")
+
+    context = {
+        'papers': papers,
+        'exam_type': exam_type,
+        'total_count': papers.count(),
+        'page_title': f'{exam_type} Question Papers'
+    }
+    return render(request, 'shop/papers_by_type.html', context)

@@ -70,7 +70,368 @@
                     </div>
                     
                     {% if paper.is_paid %}
-                        <p class="text-muted small mt-3">
+                        <p class="text-muted small mt-3">{% extends 'base.html' %}
+{% load static %}
+
+{% block page_title %}{{ paper.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow border-0">
+            <div class="card-header bg-gradient-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Question Paper Details</h4>
+            </div>
+            <div class="card-body p-4">
+                
+                <!-- Header with Title -->
+                <div class="text-center mb-4">
+                    <h1 class="card-title text-dark mb-2">{{ paper.title }}</h1>
+                    <div class="text-muted">
+                        <i class="bi bi-eye"></i> {{ paper.views }} views | 
+                        <i class="bi bi-download"></i> {{ paper.downloads.count }} downloads
+                    </div>
+                </div>
+                
+                <!-- Paper Preview Section -->
+                {% if paper.preview_image %}
+                <div class="preview-section text-center mb-4">
+                    <div class="preview-container">
+                        <img src="{{ paper.generate_thumbnail|default:paper.get_preview_image_url }}" 
+                             alt="{{ paper.title }} Preview"
+                             class="img-fluid paper-preview rounded shadow"
+                             id="paperPreview">
+                        <div class="preview-overlay">
+                            <button class="btn btn-light btn-sm" onclick="enlargePreview()">
+                                <i class="bi bi-zoom-in"></i> Enlarge
+                            </button>
+                        </div>
+                    </div>
+                    <small class="text-muted">Preview image - Click to enlarge</small>
+                </div>
+                {% else %}
+                <div class="text-center mb-4">
+                    <div class="file-icon-display">
+                        <i class="bi bi-file-earmark-pdf" style="font-size: 5rem; color: #dc3545;"></i>
+                        <p class="text-muted mt-2">PDF Document Preview</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Paper Info Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card h-100 border-primary">
+                            <div class="card-body text-center">
+                                <i class="bi bi-mortarboard-fill text-primary" style="font-size: 2rem;"></i>
+                                <h6 class="card-subtitle mt-2 mb-2 text-muted">Class / Grade</h6>
+                                <p class="card-text fw-bold text-primary">{{ paper.class_level.name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card h-100 border-success">
+                            <div class="card-body text-center">
+                                <i class="bi bi-calendar-week text-success" style="font-size: 2rem;"></i>
+                                <h6 class="card-subtitle mt-2 mb-2 text-muted">Term</h6>
+                                <p class="card-text fw-bold text-success">{{ paper.term.name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card h-100 border-info">
+                            <div class="card-body text-center">
+                                <i class="bi bi-book text-info" style="font-size: 2rem;"></i>
+                                <h6 class="card-subtitle mt-2 mb-2 text-muted">Subject</h6>
+                                <p class="card-text fw-bold text-info">{{ paper.subject.name }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card h-100 border-warning">
+                            <div class="card-body text-center">
+                                <i class="bi bi-file-text text-warning" style="font-size: 2rem;"></i>
+                                <h6 class="card-subtitle mt-2 mb-2 text-muted">Exam Type</h6>
+                                <p class="card-text fw-bold text-warning">{{ paper.get_exam_type_display }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- File Details & Description -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        {% if paper.description %}
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-card-text"></i> Description</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ paper.description }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-info-circle"></i> File Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2"><i class="bi bi-filetype-pdf text-danger"></i> <strong>Format:</strong> PDF</li>
+                                    <li class="mb-2"><i class="bi bi-file-text"></i> <strong>Pages:</strong> {{ paper.pages }}</li>
+                                    <li class="mb-2"><i class="bi bi-hdd"></i> <strong>Size:</strong> {{ paper.file_size|default:"Calculating..." }}</li>
+                                    <li class="mb-2"><i class="bi bi-calendar"></i> <strong>Year:</strong> {{ paper.year }}</li>
+                                    <li><i class="bi bi-database"></i> <strong>Storage:</strong> Cloudinary CDN</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Security Alert -->
+                {% if paper.is_paid %}
+                <div class="alert alert-warning alert-dismissible fade show mb-4">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="bi bi-shield-lock" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h5 class="alert-heading mb-2"><i class="bi bi-shield-check"></i> Secure PDF Access</h5>
+                            <p class="mb-2">This question paper is password-protected. After successful payment, the password will be sent instantly to your mobile phone via SMS.</p>
+                            {% if paper.password %}
+                            <p class="mb-0"><strong>Password:</strong> <code>{{ paper.password }}</code> (Will be sent after payment)</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-success alert-dismissible fade show mb-4">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="bi bi-gift" style="font-size: 2rem;"></i>
+                        </div>
+                        <div>
+                            <h5 class="alert-heading mb-2"><i class="bi bi-unlock"></i> Free Resource</h5>
+                            <p class="mb-0">This paper is a free resource. Click the button below to download instantly without payment.</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Pricing & Action Section -->
+                <div class="text-center mt-5 p-4 bg-light rounded border">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            {% if paper.is_paid %}
+                            <div class="pricing-display">
+                                <h5 class="text-muted mb-2">One-time Purchase</h5>
+                                <h2 class="text-success display-4 fw-bold mb-0">{{ currency_code }} {{ paper.price }}</h2>
+                                <small class="text-muted">Instant access after payment</small>
+                            </div>
+                            {% else %}
+                            <div class="pricing-display">
+                                <h5 class="text-muted mb-2">Free Download</h5>
+                                <h2 class="text-success display-4 fw-bold mb-0">{{ currency_code }} 0.00</h2>
+                                <small class="text-muted">Download instantly</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="action-buttons">
+                                {% if paper.is_paid %}
+                                <!-- Purchase Button -->
+                                <a href="{{ button_url }}"
+                                    class="btn btn-primary btn-lg px-5 py-3 w-100 mb-2">
+                                    <i class="bi bi-lock-fill"></i> {{ button_text }}
+                                </a>
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-arrow-right-circle"></i> Securely redirected to Paystack
+                                </p>
+                                {% else %}
+                                <!-- Free Download Button -->
+                                <a href="{{ paper.get_pdf_url }}"
+                                    class="btn btn-success btn-lg px-5 py-3 w-100 mb-2"
+                                    download="{{ paper.file_name }}"
+                                    onclick="trackDownload('{{ paper.slug }}')">
+                                    <i class="bi bi-download"></i> Download Now
+                                </a>
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-cloud-arrow-down"></i> Securely delivered via Cloudinary
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Security Badges -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap justify-content-center gap-3">
+                                <span class="badge bg-success">
+                                    <i class="bi bi-shield-check"></i> Secure Payment
+                                </span>
+                                <span class="badge bg-info">
+                                    <i class="bi bi-lightning-charge"></i> Instant Delivery
+                                </span>
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-phone"></i> SMS Password
+                                </span>
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-cloud"></i> Cloud Storage
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Back Button -->
+                <div class="text-center mt-4">
+                    <a href="{% url 'shop:subject_list' paper.class_level.slug paper.term.slug %}"
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Subjects
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Related Papers Section -->
+        {% if related_papers %}
+        <div class="card shadow border-0 mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-files"></i> Related Question Papers</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for related in related_papers %}
+                    <div class="col-md-4 mb-3">
+                        {% include 'shop/paper_card.html' with paper=related %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Preview: {{ paper.title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                {% if paper.preview_image %}
+                <img src="{{ paper.get_preview_image_url }}" 
+                     alt="{{ paper.title }} Full Preview"
+                     class="img-fluid rounded">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Track download for free papers
+function trackDownload(slug) {
+    fetch(`/api/track-download/${slug}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+    });
+}
+
+// Enlarge preview image
+function enlargePreview() {
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    previewModal.show();
+}
+
+// Auto-load the first preview image
+document.addEventListener('DOMContentLoaded', function() {
+    const previewImg = document.getElementById('paperPreview');
+    if (previewImg) {
+        previewImg.addEventListener('click', enlargePreview);
+    }
+});
+</script>
+
+<style>
+.preview-section {
+    position: relative;
+}
+
+.preview-container {
+    position: relative;
+    display: inline-block;
+}
+
+.paper-preview {
+    max-height: 300px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.paper-preview:hover {
+    transform: scale(1.02);
+}
+
+.preview-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.preview-container:hover .preview-overlay {
+    opacity: 1;
+}
+
+.file-icon-display {
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 2px dashed #dee2e6;
+}
+
+.pricing-display {
+    padding: 1.5rem;
+    background: white;
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+}
+
+.action-buttons .btn {
+    transition: all 0.3s ease;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.card {
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+</style>
+{% endblock %}
                             You'll be redirected to Paystack for secure Mobile Money payment
                         </p>
                     {% endif %}

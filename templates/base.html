@@ -3,20 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Insight Innovations{% endblock %}</title>
+    <title>{% block page_title %}Insight Innovations{% endblock %}</title>
     
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" 
           rel="stylesheet" 
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
           crossorigin="anonymous">
     
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
+    <!-- Cloudinary CSS (for image transformations) -->
+    <link rel="stylesheet" href="https://unpkg.com/cloudinary-video-player/dist/cld-video-player.min.css">
+    
+    <!-- Custom CSS -->
     <style>
         :root {
             --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
             --info-color: #0dcaf0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
             --dark-color: #212529;
         }
         
@@ -127,11 +140,44 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Cloudinary specific styles */
+        .cloudinary-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        
+        .pdf-preview {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .pdf-preview:hover {
+            border-color: #0d6efd;
+            background: #e8f4fd;
+        }
+        
+        /* Print styles */
+        @media print {
+            .navbar, .footer, .no-print {
+                display: none !important;
+            }
+            body {
+                padding-top: 0;
+            }
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Cloudinary Configuration -->
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
     
     <!-- Drawer/Offcanvas Menu -->
     <div class="offcanvas offcanvas-start bg-dark text-white" 
@@ -179,9 +225,9 @@
                     
                     <!-- Browse by Year -->
                     <li class="nav-item">
-                        <a href="{% url 'shop:papers_by_year' year=2024 %}" 
+                        <a href="{% url 'shop:papers_by_year' year=current_year %}" 
                            class="nav-link text-white">
-                            <i class="fas fa-calendar-alt me-2"></i> 2024 Papers
+                            <i class="fas fa-calendar-alt me-2"></i> {{ current_year|default:"2024" }} Papers
                         </a>
                     </li>
                     
@@ -335,8 +381,8 @@
                             <li><a class="dropdown-item" href="{% url 'shop:all_papers' %}">
                                 <i class="fas fa-file-alt me-2"></i> All Papers
                             </a></li>
-                            <li><a class="dropdown-item" href="{% url 'shop:papers_by_year' year=2024 %}">
-                                <i class="fas fa-calendar-alt me-2"></i> 2024 Papers
+                            <li><a class="dropdown-item" href="{% url 'shop:papers_by_year' year=current_year %}">
+                                <i class="fas fa-calendar-alt me-2"></i> {{ current_year|default:"2024" }} Papers
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><h6 class="dropdown-header">By Exam Type</h6></li>
@@ -549,6 +595,9 @@
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
     
+    <!-- Cloudinary JS -->
+    <script src="https://unpkg.com/cloudinary-video-player/dist/cld-video-player.min.js"></script>
+    
     <!-- Custom JavaScript -->
     <script>
         // Add active class to current nav links
@@ -594,6 +643,23 @@
                         this.innerHTML = originalText;
                         this.disabled = false;
                     }, 3000);
+                });
+            });
+            
+            // Cloudinary PDF preview handling
+            document.querySelectorAll('.cloudinary-pdf').forEach(element => {
+                element.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const pdfUrl = this.href;
+                    
+                    // Open PDF in new tab or show preview
+                    window.open(pdfUrl, '_blank');
+                    
+                    // Track PDF view
+                    const paperSlug = this.getAttribute('data-paper-slug');
+                    if (paperSlug) {
+                        trackPaperView(paperSlug);
+                    }
                 });
             });
         });
@@ -658,7 +724,7 @@
         // Track paper views (for paper detail pages)
         function trackPaperView(paperSlug) {
             if (paperSlug) {
-                fetch(`/api/paper/${paperSlug}/track-view/`, {
+                fetch(`/api/track-view/${paperSlug}/`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': getCookie('csrftoken'),
@@ -667,6 +733,70 @@
                 });
             }
         }
+        
+        // Track downloads (for free papers)
+        function trackDownload(paperSlug, email = null) {
+            if (paperSlug) {
+                const data = {};
+                if (email) {
+                    data.email = email;
+                }
+                
+                fetch(`/api/track-download/${paperSlug}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+            }
+        }
+        
+        // Back to top button functionality
+        const backToTopButton = document.createElement('button');
+        backToTopButton.innerHTML = '<i class="fas fa-arrow-up"></i>';
+        backToTopButton.className = 'btn btn-info btn-floating';
+        backToTopButton.style.position = 'fixed';
+        backToTopButton.style.bottom = '20px';
+        backToTopButton.style.right = '20px';
+        backToTopButton.style.display = 'none';
+        backToTopButton.style.zIndex = '1000';
+        backToTopButton.style.width = '50px';
+        backToTopButton.style.height = '50px';
+        backToTopButton.style.borderRadius = '50%';
+        backToTopButton.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+        
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                backToTopButton.style.display = 'block';
+            } else {
+                backToTopButton.style.display = 'none';
+            }
+        });
+        
+        document.body.appendChild(backToTopButton);
+        
+        // Cloudinary image optimization
+        function optimizeCloudinaryImages() {
+            document.querySelectorAll('img[data-cloudinary-src]').forEach(img => {
+                const src = img.getAttribute('data-cloudinary-src');
+                const width = img.offsetWidth || 800;
+                const height = img.offsetHeight || 600;
+                
+                // Generate optimized Cloudinary URL
+                const optimizedUrl = src.replace('/upload/', `/upload/w_${width},h_${height},c_fill,q_auto,f_auto/`);
+                img.src = optimizedUrl;
+            });
+        }
+        
+        // Run image optimization on load and resize
+        window.addEventListener('load', optimizeCloudinaryImages);
+        window.addEventListener('resize', optimizeCloudinaryImages);
     </script>
     
     {% block extra_js %}{% endblock %}

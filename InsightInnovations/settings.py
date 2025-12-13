@@ -2,6 +2,10 @@
 
 from pathlib import Path
 from decouple import config 
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -12,14 +16,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-    config('NGROK_TUNNEL', default=''),
+# Parse ALLOWED_HOSTS from config
+allowed_hosts_str = config('ALLOWED_HOSTS', default='127.0.0.1,localhost')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
+
+# Add additional hosts
+additional_hosts = [
+    config('NGROK_TUNNEL', default='').replace('https://', '').replace('http://', '').split('/')[0],
     '.render.com',
     'InsightInnovations.onrender.com',
     config('RENDER_EXTERNAL_HOSTNAME', default=''),
 ]
+
+for host in additional_hosts:
+    if host and host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
+
+# ====================================================================
+# CLOUDINARY CONFIGURATION (MUST BE BEFORE OTHER SETTINGS)
+# ====================================================================
+
+# Configure Cloudinary from CLOUDINARY_URL
+cloudinary.config(secure=True)
 
 # ====================================================================
 # API KEYS
@@ -28,7 +46,7 @@ ALLOWED_HOSTS = [
 PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
 ARKESEL_API_KEY = config('ARKESEL_API_KEY')
-CURRENCY_CODE = 'GHS'
+CURRENCY_CODE = config('CURRENCY_CODE', default='GHS')
 
 # ====================================================================
 # EMAIL CONFIG
@@ -86,6 +104,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'shop.context_processors.current_year',
             ],
         },
     },
@@ -116,22 +135,70 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # ====================================================================
+# INTERNATIONALIZATION
+# ====================================================================
+
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
+
+# ====================================================================
 # STATIC & MEDIA FILES
 # ====================================================================
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_DIRS = [BASE_DIR / 'static']  # Add this if you have a static folder
 
 # -----------------------------
-# 🔥 CLOUDINARY MEDIA STORAGE
+# 🔥 STORAGE CONFIGURATION
 # -----------------------------
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-MEDIA_URL = '/media/'
+# Django 4.2+ way (recommended)
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Legacy way (compatible with older Django)
+# MEDIA_URL = '/media/'
+# DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Optional Cloudinary settings
+CLOUDINARY_STORAGE = {
+    # This helps avoid overwriting files with same name
+    'overwrite': False,
+    # You can specify a default folder for uploads
+    # 'default_folder': 'InsightInnovations/media',
+    # Resource type settings
+    'resource_type': 'auto',
+    # Validation
+    'validate_filename': True,
+}
 
 # ====================================================================
 # DEFAULT PK
 # ====================================================================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ====================================================================
+# SECURITY SETTINGS (FOR PRODUCTION)
+# ====================================================================
+
+if not DEBUG:
+    # Security settings for production
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
