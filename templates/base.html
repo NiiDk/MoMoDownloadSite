@@ -125,6 +125,47 @@
                 padding-top: 66px;
             }
         }
+
+        /* Make cards a bit smaller and more compact on small (phone) screens */
+        @media (max-width: 576px) {
+            .card {
+                border-radius: 8px;
+            }
+
+            /* Reduce padding inside cards */
+            .card .card-body {
+                padding: 0.75rem;
+            }
+
+            /* Slightly smaller headings and text */
+            .card h1, .card h2, .card h3, .card h4, .card h5 {
+                font-size: 1rem;
+                margin-bottom: 0.4rem;
+            }
+
+            .card p, .card .lead, .card .small, .card .text-muted {
+                font-size: 0.85rem;
+            }
+
+            /* Reduce image heights so cards don't take too much vertical space */
+            .card-img-top, .paper-preview img, .cloudinary-image {
+                max-height: 140px;
+                width: 100%;
+                object-fit: cover;
+            }
+
+            /* Make large buttons slightly smaller */
+            .btn-lg {
+                padding: 0.45rem 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            /* Reduce spacing for lists/rows inside cards */
+            .card .row, .card .list-unstyled {
+                margin: 0;
+                gap: 0.25rem;
+            }
+        }
         
         /* Loading animation */
         .loading {

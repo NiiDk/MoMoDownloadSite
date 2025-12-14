@@ -42,9 +42,10 @@ for host in additional_hosts:
 # API KEYS (No change)
 # ====================================================================
 
-PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
-PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
-ARKESEL_API_KEY = config('ARKESEL_API_KEY')
+PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY', default='')
+PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY', default='')
+# ARKESEL is optional for local/dev; default to empty string to avoid import errors
+ARKESEL_API_KEY = config('ARKESEL_API_KEY', default='')
 CURRENCY_CODE = config('CURRENCY_CODE', default='GHS')
 
 # ====================================================================
@@ -148,7 +149,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']  # Add this if you have a static folder
+# Only include the project `static/` directory if it exists to avoid warnings during checks
+STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
 # --- Media Settings for Local File Storage ---
 MEDIA_URL = '/media/'

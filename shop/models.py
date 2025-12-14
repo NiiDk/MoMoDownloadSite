@@ -76,7 +76,8 @@ class QuestionPaper(models.Model):
     subject = models.ForeignKey(Subject, related_name='papers', on_delete=models.PROTECT)
     
     # Unique identifier
-    slug = models.SlugField(max_length=200, unique=True, default=uuid.uuid4)
+    # Use a string UUID by default; save() will generate a human-friendly slug when possible
+    slug = models.SlugField(max_length=200, unique=True, default=lambda: str(uuid.uuid4()))
     
     # Paper details
     year = models.IntegerField(
@@ -135,14 +136,15 @@ class QuestionPaper(models.Model):
         return f"{self.class_level.name} - {self.term.name} - {self.subject.name} ({self.title})"
 
     def save(self, *args, **kwargs):
-        # Auto-generate slug if not provided
-        if not self.slug or self.slug == str(uuid.uuid4()):
+        # Auto-generate slug if not provided. We avoid comparing to a new uuid() (always different).
+        if not self.slug:
             base_slug = slugify(f"{self.class_level.name} {self.term.name} {self.subject.name} {self.title}")
-            self.slug = base_slug
+            slug_candidate = base_slug or str(uuid.uuid4())
             counter = 1
-            while QuestionPaper.objects.filter(slug=self.slug).exists():
-                self.slug = f"{base_slug}-{counter}"
+            while QuestionPaper.objects.filter(slug=slug_candidate).exists():
+                slug_candidate = f"{base_slug}-{counter}"
                 counter += 1
+            self.slug = slug_candidate
         
         # Set default password if not provided
         if not self.password and self.is_paid:
@@ -230,6 +232,26 @@ class Payment(models.Model):
         price = self.amount_paid if self.amount_paid is not None else self.question_paper.price
         return int(price * 100) if price is not None else 0
 
+    def save(self, *args, **kwargs):
+        # Ensure a unique reference is generated when creating a payment
+        if not self.ref:
+            # Use a short upper-case hex string for references
+            self.ref = uuid.uuid4().hex[:12].upper()
+        super().save(*args, **kwargs)
+
+    def mark_as_verified(self, transaction_id=None, amount=None):
+        """Mark this payment as verified and store transaction details."""
+        self.verified = True
+        if transaction_id:
+            self.transaction_id = str(transaction_id)
+        if amount is not None:
+            try:
+                # If amount was provided in pesewas or as float in cedis, normalize to Decimal-like float
+                self.amount_paid = float(amount)
+            except Exception:
+                pass
+        self.save()
+
     def __str__(self):
         return f"Payment #{self.ref} - {self.email}"
     
@@ -248,6 +270,47 @@ class DownloadHistory(models.Model):
     
     # Metadata
     downloaded_at = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def log_download(cls, paper, email=None, request=None, payment=None):
+        """Create a DownloadHistory record from supplied info.
+
+        Parameters:
+        - paper: QuestionPaper instance
+        - email: user email (optional)
+        - request: HttpRequest (optional) - used to extract IP and user agent
+        - payment: Payment instance (optional)
+        """
+        ip = None
+        ua = None
+        if request is not None:
+            # Try common headers for client IP
+            xff = request.META.get('HTTP_X_FORWARDED_FOR')
+            if xff:
+                ip = xff.split(',')[0].strip()
+            else:
+                ip = request.META.get('REMOTE_ADDR')
+            ua = request.META.get('HTTP_USER_AGENT', '')
+
+        dh = cls.objects.create(
+            paper=paper,
+            payment=payment,
+            user_email=email,
+            ip_address=ip,
+            user_agent=ua or ''
+        )
+
+        # If this paper has a FreeSample object and this was a free download, increment counter
+        try:
+            if payment is None and hasattr(paper, 'free_sample') and paper.free_sample is not None:
+                fs = paper.free_sample
+                fs.downloads = (fs.downloads or 0) + 1
+                fs.save()
+        except Exception:
+            # best-effort; don't fail the download logging for sample increment errors
+            pass
+
+        return dh
 
     def __str__(self):
         return f"Download of {self.paper.title} by {self.user_email or 'Anonymous'}"
