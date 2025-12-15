@@ -15,32 +15,14 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 allowed_hosts_str = config('ALLOWED_HOSTS', default='127.0.0.1,localhost')
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
 
-# List all possible dynamic hosts and platform wildcards
+# Add additional hosts
 additional_hosts = [
-    # Ngrok: Extracts the domain from the NGROK_TUNNEL URL
     config('NGROK_TUNNEL', default='').replace('https://', '').replace('http://', '').split('/')[0],
-
-    # Render: Wildcard for the platform and specific domain/hostname
     '.render.com',
     'InsightInnovations.onrender.com',
     config('RENDER_EXTERNAL_HOSTNAME', default=''),
-    
-    # Railway: Wildcard for the platform and internal host
-    '.railway.app',  # Allows all subdomains (e.g., web-production-1be83.up.railway.app)
-    '0.0.0.0',        # For internal binding/health checks
-
-    # Include any specific custom domain if set as an environment variable
-    config('CUSTOM_DOMAIN', default=''),
-    
-    # Optional: If you want to explicitly include your current Railway domain
-    'web-production-1be83.up.railway.app',
 ]
-
-# --- 3. Integration ---
-
-# Loop through the list and append valid, non-duplicate hosts to ALLOWED_HOSTS
 for host in additional_hosts:
-    # Check if the host string is non-empty and not already in the list
     if host and host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
 
