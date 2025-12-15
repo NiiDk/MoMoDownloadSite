@@ -1,15 +1,13 @@
 # InsightInnovations/settings.py
-
 from pathlib import Path
-from decouple import config 
-import os # Keep os imported
+from decouple import config
+import os  # Keep os imported
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ====================================================================
 # SECURITY AND HOSTS
 # ====================================================================
-
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
@@ -24,34 +22,21 @@ additional_hosts = [
     'InsightInnovations.onrender.com',
     config('RENDER_EXTERNAL_HOSTNAME', default=''),
 ]
-
 for host in additional_hosts:
     if host and host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
 
 # ====================================================================
-# CLOUDINARY CONFIGURATION (REMOVED)
-# ====================================================================
-
-# REMOVED: import cloudinary
-# REMOVED: import cloudinary.uploader
-# REMOVED: import cloudinary.api
-# REMOVED: cloudinary.config(secure=True)
-
-# ====================================================================
 # API KEYS (No change)
 # ====================================================================
-
 PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY', default='')
 PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY', default='')
-# ARKESEL is optional for local/dev; default to empty string to avoid import errors
 ARKESEL_API_KEY = config('ARKESEL_API_KEY', default='')
 CURRENCY_CODE = config('CURRENCY_CODE', default='GHS')
 
 # ====================================================================
 # EMAIL CONFIG (No change)
 # ====================================================================
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
@@ -63,20 +48,20 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 # ====================================================================
 # APPLICATIONS
 # ====================================================================
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    
+    # Cloudinary apps - MUST be before staticfiles
+    'cloudinary_storage',
+    'cloudinary',
+    
     'django.contrib.staticfiles',
-
-    # Cloudinary (REMOVED)
-    # REMOVED: 'cloudinary',
-    # REMOVED: 'cloudinary_storage',
-
-    # Custom app
+    
+    # Your app
     'shop',
 ]
 
@@ -115,7 +100,6 @@ WSGI_APPLICATION = 'InsightInnovations.wsgi.application'
 # ====================================================================
 # DATABASE (No change)
 # ====================================================================
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -126,7 +110,6 @@ DATABASES = {
 # ====================================================================
 # PASSWORD VALIDATION (No change)
 # ====================================================================
-
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -137,61 +120,52 @@ AUTH_PASSWORD_VALIDATORS = [
 # ====================================================================
 # INTERNATIONALIZATION (No change)
 # ====================================================================
-
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
 # ====================================================================
-# STATIC & MEDIA FILES (REVISED: Added MEDIA_URL/ROOT for local serving)
+# STATIC FILES (Keep Whitenoise for production)
 # ====================================================================
-
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-# Only include the project `static/` directory if it exists to avoid warnings during checks
 STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
-# --- Media Settings for Local File Storage ---
+# ====================================================================
+# MEDIA FILES - Now handled by Cloudinary in production
+# ====================================================================
+# These are kept for local development (when DEBUG=True)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-# -------------------------------------------
 
-# -----------------------------
-# 🔥 STORAGE CONFIGURATION (REVISED for Local Storage)
-# -----------------------------
+# ====================================================================
+# CLOUDINARY CONFIGURATION
+# ====================================================================
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': config('CLOUDINARY_API_KEY'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET'),
+}
 
-# Django 4.2+ way (recommended)
+# ====================================================================
+# STORAGE CONFIGURATION - Cloudinary for media, Whitenoise for static
+# ====================================================================
 STORAGES = {
     "default": {
-        # Changed BACKEND to use standard Django File System Storage
-        "BACKEND": "django.core.files.storage.FileSystemStorage", 
+        "BACKEND": "cloudinary_storage.storage.RawMediaCloudinaryStorage",  # For documents/PDFs
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
-# Legacy way (compatible with older Django) - REMOVED
-# REMOVED: MEDIA_URL = '/media/'
-# REMOVED: DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-# REMOVED: STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Optional Cloudinary settings (REMOVED)
-# REMOVED: CLOUDINARY_STORAGE = { ... }
-
-# ====================================================================
-# DEFAULT PK (No change)
-# ====================================================================
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ====================================================================
-# SECURITY SETTINGS (FOR PRODUCTION) (No change)
+# SECURITY SETTINGS (FOR PRODUCTION)
 # ====================================================================
-
 if not DEBUG:
-    # Security settings for production
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
