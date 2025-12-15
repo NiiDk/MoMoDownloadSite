@@ -163,6 +163,12 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ====================================================================
+# WORKAROUND: Fix django-cloudinary-storage collectstatic compatibility issue
+# The package incorrectly checks for the deprecated STATICFILES_STORAGE setting
+# ====================================================================
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# ====================================================================
 # SECURITY SETTINGS (FOR PRODUCTION)
 # ====================================================================
 if not DEBUG:
