@@ -76,7 +76,6 @@ class QuestionPaper(models.Model):
     subject = models.ForeignKey(Subject, related_name='papers', on_delete=models.PROTECT)
     
     # Unique identifier
-    # Use a string UUID by default; save() will generate a human-friendly slug when possible
     slug = models.SlugField(max_length=200, unique=True, default=lambda: str(uuid.uuid4()))
     
     # Paper details
@@ -134,6 +133,18 @@ class QuestionPaper(models.Model):
 
     def __str__(self):
         return f"{self.class_level.name} - {self.term.name} - {self.subject.name} ({self.title})"
+
+    # --- START CRITICAL FIX: Delete file when model is deleted ---
+    def delete(self, *args, **kwargs):
+        """
+        Deletes the associated PDF file from storage before deleting 
+        the database record, preventing orphan files on the disk.
+        """
+        if self.pdf_file:
+            self.pdf_file.delete(save=False)
+        
+        super().delete(*args, **kwargs)
+    # --- END CRITICAL FIX ---
 
     def save(self, *args, **kwargs):
         # Auto-generate slug if not provided. We avoid comparing to a new uuid() (always different).
@@ -273,14 +284,7 @@ class DownloadHistory(models.Model):
 
     @classmethod
     def log_download(cls, paper, email=None, request=None, payment=None):
-        """Create a DownloadHistory record from supplied info.
-
-        Parameters:
-        - paper: QuestionPaper instance
-        - email: user email (optional)
-        - request: HttpRequest (optional) - used to extract IP and user agent
-        - payment: Payment instance (optional)
-        """
+        """Create a DownloadHistory record from supplied info."""
         ip = None
         ua = None
         if request is not None:
@@ -333,6 +337,18 @@ class FreeSample(models.Model):
     
     def __str__(self):
         return f"Free Sample for {self.question_paper.title}"
+
+    # --- START CRITICAL FIX: Delete file when model is deleted ---
+    def delete(self, *args, **kwargs):
+        """
+        Deletes the associated sample PDF file from storage before deleting 
+        the database record.
+        """
+        if self.sample_pdf:
+            self.sample_pdf.delete(save=False)
+        
+        super().delete(*args, **kwargs)
+    # --- END CRITICAL FIX ---
     
     class Meta:
         ordering = ('-created_at',)
